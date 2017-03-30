@@ -11,6 +11,7 @@ import sys
 import os
 import shutil
 from posix import system
+import logging
 
 
 def copyall (src, dest):
@@ -50,7 +51,12 @@ os.makedirs("RisultatiMultipli")
 os.makedirs("Database")
 os.makedirs("LogFiles")
 
+
+
+
 shutil.copytree("CCM_RH60", "Src")
+
+
 
 for ecc in Eccentricities:
     for obl in Obliquities:
