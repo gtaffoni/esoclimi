@@ -4,7 +4,7 @@
 #  Esoclimi
 #
 #  Created by giuliano taffoni on 04/04/17.
-#  Copyright © 2017 Guliano Taffoni. All rights reserved.
+#  Copyright 2017 Guliano Taffoni. All rights reserved.
 
 """
     
