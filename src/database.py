@@ -86,7 +86,6 @@ def archive_logs(p,ecc,dist,obl):
     shutil.move("log",str)
 
 
-###################### BEGIN MAIN #####################################
 
 '''
     Input paramters of the computational kernel:
@@ -108,8 +107,14 @@ Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 simtype="Std"
 version="1.1.03"
 number=1
-
 template_dir="/work/Programming/Esoclimi/Devel"
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(message)s',
+                    filename='run.log',
+                    filemode='w')
+
+
 
 shutil.copytree(template_dir+"/CCM_RH60", "Src") # GT why here?
 
@@ -122,20 +127,23 @@ for ecc in Eccentricities:
                 print p,ecc,obl,dist # BETTER USE A LOGGER
             
                 make_work_area()
+
+
+
                 os.chdir("Src")
                 
                 #insert a log here
-                system("pwd") # GT a che serve?
+                logging.info("%s",os.getcwd())
                 #executing runEBM.py - this compiles and runs the code
-                #GT to include in the code
+                #GT to include in this code
                 str="python runEBM.py PRESSUREScurr.py %d %s %s > log "%(number,version,simtype)
-                print str
+                logging.info("%s",str)
                 #system(str)
 
                 #now we have results. Making .fits file (REQUIRES PYFIT)
                 os.chdir("Risultati")
-                print "python ../../fits_map_temperature.py"
-                system("python ../../fits_map_temperature.py") # MUST BE INCLUDED IN THE CODE AS A FUCTION
+                logging.info("%s","python ../../fits_map_temperature.py")
+                system("python ../../fits_map_temperature.py") # MUST BE INCLUDED IN THIS CODE AS A FUCTION
 
                 for file in os.listdir("/mydir"):   #maybe not necessary if include the fits conveter
                     if file.endswith(".fits") and file.find("ESTM"):
@@ -144,8 +152,8 @@ for ecc in Eccentricities:
                 os.chdir("..")
                 
                 #archiving log file
-                system("pwd") # BETTER USE A LOGGER
-                system("ls PR*") # BETTER USE A LOGGER
+                logging.info("%s",os.getcwd())
+                logging.info("%s",os.listdir())
                 archive_logs(p,ecc,dist,obl)
                 
                 #archiving Risults
@@ -157,3 +165,7 @@ for ecc in Eccentricities:
                 #back to main dir
                 os.chdir("..")
                 print "\n\n\n"
+
+
+if __name__ == '__main__':
+    main()
