@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
+		901EDA861E93E62A00630C7D /* workarea.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = workarea.py; path = src/workarea.py; sourceTree = "<group>"; };
+		901EDA871E93EE2200630C7D /* fitslib.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = fitslib.py; path = src/fitslib.py; sourceTree = "<group>"; };
 		90740CD91E8D8E9D00EC1C36 /* database.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = database.py; path = src/database.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -14,6 +16,8 @@
 		90740CCD1E8D3C9500EC1C36 = {
 			isa = PBXGroup;
 			children = (
+				901EDA871E93EE2200630C7D /* fitslib.py */,
+				901EDA861E93E62A00630C7D /* workarea.py */,
 				90740CD91E8D8E9D00EC1C36 /* database.py */,
 			);
 			sourceTree = "<group>";
