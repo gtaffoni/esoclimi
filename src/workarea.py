@@ -56,7 +56,6 @@ def collective_move (src, dest):
 def archive_results(str,src,Risultati):
     import os
     import shutil
-    shutil.copy(src+"/PRESSUREScurr.py",Risultati)
     shutil.copy(src+"/parEBM.h",Risultati)
     os.mkdir(str)
     collective_move(Risultati,str)
