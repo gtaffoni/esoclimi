@@ -26,7 +26,6 @@ def modulationPAR(obliquity,R):
       c1=0.
       return c0,c1
    
-   print 'Starting calculation of C0 and C1'
    delta0=obliquity*np.pi/180.  #  OBLIQUITY
    Pdays=365                    #  ORBITAL PERIOD (days)
    P=86400.*Pdays               #  ORBITAL PERIOD (sec)

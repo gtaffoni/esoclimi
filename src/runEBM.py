@@ -334,6 +334,7 @@ def runEBM(runDir,logfile):
     origin = os.getcwd()
     # move to the proper directory
     logging.info("Run program")
-    p = subprocess.call("codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+    os.chdir(runDir)
+    p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
     os.chdir(origin)
 

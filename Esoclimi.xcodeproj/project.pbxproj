@@ -23,8 +23,8 @@
 				901EDA881E942ED700630C7D /* runEBM.py */,
 				901EDA871E93EE2200630C7D /* fitslib.py */,
 				901EDA861E93E62A00630C7D /* workarea.py */,
-				90740CD91E8D8E9D00EC1C36 /* database.py */,
 				901EDA8A1E9583E900630C7D /* constantsEBM.py */,
+				90740CD91E8D8E9D00EC1C36 /* database.py */,
 			);
 			sourceTree = "<group>";
 		};

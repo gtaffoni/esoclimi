@@ -80,5 +80,6 @@ def archive_logs(str,log):
         a new run is executed
 '''
 def CleanAllPartialResults(localDir):
-    print localDir
+    import shutil
+    shutil.rmtree(localDir)
     return

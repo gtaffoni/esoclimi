@@ -34,7 +34,7 @@ def create_FITS(in_file,out_file,param_file):
     prihdr['N']  = (N, 'number of latitude zones')
     prihdr['Ns']  = (Ns, 'number of time steps per orbit')
 
-    lines = [line.rstrip('\n') for line in open(pfile)]
+    lines = [line.rstrip('\n') for line in open(param_file)]
     for line in lines:
         if line:
             words = line.split('!')

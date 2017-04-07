@@ -41,18 +41,21 @@ simtype = "Std"
 version = "1.1.03"
 
 # Directories and Files
-template_dir="/home/mpi4py/Esoclimi/Templates"
+template_dir="/home/LAVORO/Programming/Esoclimi/Templates"
+workDir = os.getcwd()
+
 RisultatiMultipli = "RisultatiMultipli"
 Database = "Database"
 LogFiles = "LogFiles"
 Risultati ="Risultati"
 Src = "Src"
-workDir = "/home/mpi4py/Esoclimi/Tests"
 planet = "EARTH"
 
-fits_out_base = "Database/ESTM1.1.01-"                       # base name of the FITs output
+
+
+fits_out_base = workDir+"/Database/ESTM1.1.01-"     # base name of the FITs output
 fortran_run_result="year_lat_temp_last1.tlt"        # Data File name
-fits_param_file = "esopianeti.par"
+fits_param_file = "/esopianeti.par"
 
 
 def make_work_area (_dir):
@@ -74,7 +77,7 @@ def make_work_area (_dir):
 
     shutil.copytree(template_dir+"/CCM_RH60", localSrc+"/CCM_RH60")
     
-    # copyall(template_dir+"/ModulesDef", localSrc) # they are all empty files ????
+    copyall(template_dir+"/ModulesDef", localSrc) # they are all empty files ????
     
     copyall(template_dir+"/Std",localSrc)
     if simtype=="VegPassive":
@@ -93,50 +96,52 @@ def make_work_area (_dir):
 
 
 def esoclimi(numero,ecc,obl,dist,p):
-	localWorkDir="%s/%d" % (workDir,numero)
-	os.mkdir(localWorkDir)
-	# initilize log file for simulation
-	
-	logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dits=%s",numero, p,ecc,obl,dist)
-	make_work_area(localWorkDir)
-	os.chdir(localWorkDir)
-	
-	logging.info("%s",os.getcwd())
-
-	str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (numero,version,simtype)
-	logging.info("%d => %s",numero, str)
-	
-	setupEBM(planet,p,ecc,obl,dist,localWorkDir+"/"+Src,numero,version,simtype)
-	#compileEBM(localWorkDir+"/"+Src)
-	#runEBM(localWorkDir+"/"+Src)
-	
-	#now we have results. Making .fits file (REQUIRES PYFIT)
-	#os.chdir("Risultati")
-	logging.info("%d => %s", numero, "Create FITS file from data")
-	
-	#create_FITS(fortran_result_file,fits_out_base,fits_param_file)
-	
-	os.chdir(localWorkDir)
-	logging.debug("%d => %s",numero, os.getcwd())
-	logging.debug("%d => %s",numero, os.listdir("."))
-	
-	#archiving Risults
-	results_location="%s/Risultati_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(workDir+"/"+RisultatiMultipli,p,ecc,dist,obl)
-	logging.debug("%d => Archive results to: %s",numero, results_location)
-	archive_results(results_location,Src,localWorkDir+"/"+Src+"/"+Risultati)
-	
-	# close log file and archiving it DO We NEED THAT?
-	#log_dir_name="%s/log_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(LogFiles,p,ecc,dist,obl)
-	#logging.debug("Closing log file and archive to: %s",log_dir_name)
-	#archive_logs(log_dir_name,localWorkDir+"/run.log") # WHICH LOGS?
-	
-	#next simulation
-	numero=numero+1
-	
-	#back to main dir
-	os.chdir(workDir)
-    #CleanAllPartialResults(localWorkDir)
-	return
+     localWorkDir    = "%s/%d/" % (workDir,numero)
+     localSrcDir     = "%s%s/" % (localWorkDir,Src)
+     localResultDir = "%s%s/" % (localSrcDir,Risultati)
+     os.chdir(workDir)
+     os.mkdir(localWorkDir)
+     # initilize log file for simulation
+     
+     logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dits=%s",numero, p,ecc,obl,dist)
+     make_work_area(localWorkDir)
+     os.chdir(localWorkDir)
+     
+     logging.info("%s",os.getcwd())
+     #Complile and Run
+     str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (numero,version,simtype)
+     logging.info("%d => %s",numero, str)
+     setupEBM(planet,p,ecc,obl,dist,localSrcDir,numero,version,simtype)
+     log_file_local=open(localWorkDir+"/out.log",'w')    #open log file name is out.log
+     compileEBM(localSrcDir,log_file_local)
+     runEBM(localSrcDir,log_file_local)
+     log_file_local.close()
+     
+     #now we have results. Making .fits file (REQUIRES PYFIT)
+     logging.info("%d => %s", numero, "Create FITS file from data")
+     create_FITS(localResultDir+fortran_run_result,fits_out_base,localResultDir+fits_param_file)
+     
+     os.chdir(localWorkDir)
+     logging.debug("%d => %s",numero, os.getcwd())
+     logging.debug("%d => %s",numero, os.listdir("."))
+     
+     #archiving Risults
+     results_location="%s/Risultati_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(workDir+"/"+RisultatiMultipli,p,ecc,dist,obl)
+     logging.debug("%d => Archive results to: %s",numero, results_location)
+     archive_results(results_location,Src,localResultDir)
+     
+     # close log file and archiving it DO We NEED THAT?
+     log_dir_name="%s/%s/log_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(workDir,LogFiles,p,ecc,dist,obl)
+     logging.debug("Closing log file and archive to: %s",log_dir_name)
+     archive_logs(log_dir_name,localWorkDir+"/out.log")
+     
+     #next simulation
+     numero=numero+1
+     
+     #back to main dir
+     os.chdir(workDir)
+     CleanAllPartialResults(localWorkDir)
+     return
 
 
 if __name__ == '__main__':
@@ -157,5 +162,5 @@ if __name__ == '__main__':
     dist = Radii[1]
     obl = Obliquities[1]
     ecc = Eccentricities[1]
-    
     esoclimi(numero,ecc,obl,dist,p)
+        
