@@ -58,7 +58,9 @@ def create_FITS(in_file,out_file,param_file):
     out_file=out_file+date[0:2]+"."+date[2:4]+"."+date[4:8]+"-"+number+".fits"
 #print "Creating ",out_file
 
+
     data=np.loadtxt(in_file, skiprows=1)    # Read data from input file
+
     year, lat, temp = data.T
     year = year - math.floor(year[0])       # This subtracts the integer part of "year"
 
@@ -73,3 +75,5 @@ def create_FITS(in_file,out_file,param_file):
     thdulist = pyfits.HDUList([prihdu, tbhdu])
 
     thdulist.writeto(out_file)
+
+    return date
