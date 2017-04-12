@@ -22,8 +22,11 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
      from libraryEBM import modulationPAR
      from constantsEBM import *
      import logging
+     # nota, GT: senza questo non importa i parametri del pianeta!!
+     exec 'from %s import *' % planet # import data from planet parameters file
+
      logging.info("reading %s parameters", planet)
-     ### assign parameter values from inpunt better in the future
+     ### assign parameter values from input better in the future
      ff    = _p
      eccP  = _ecc
      obliq = _obl
@@ -33,6 +36,7 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
      parEBM_file   = _dir+"/parEBM.h"
      # calculate parameters c0 and c1 of modulation term, Eqs. (A11), (A12) 
      C0par,C1par=modulationPAR(obliq,R)
+
      
      tf=open(startpar_file,'r') # input template file
      pf=open(parEBM_file,'w')        # output parameter file
@@ -131,7 +135,7 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
      #      pl=pl+'! exponent in Spiegel tauIR: (T/273)^SPindex\n'
           
         if 'parameter(pressP' in tl and 'real' not in tl:
-           pl='        parameter(pressP=%11.5e)   ' % pressP
+           pl='        parameter(pressP=%11.5e)   ' % (pressP*ff)
            pl=pl+'! [Pa] planet total pressure\n'  
      
         if 'parameter(molwtP' in tl and 'real 'not in tl:
