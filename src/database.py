@@ -46,9 +46,12 @@ Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 simtype = "Std"
 version = "1.1.03"
 
+# number of non-converged runs
 nSigmaCrit = 0
 nTlim = 0
-
+#parameter values for non-converged runs
+SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
 
 # Directories and Files
 template_dir="/home/murante/data/EsoClimi/VaryCO2/CodeEBM-Feb09-EarthGeo-CO2x10-VaryOceanF07/Templates"
@@ -110,7 +113,8 @@ def make_work_area (_dir):
 def esoclimi(numero,ecc,obl,dist,p):
      import numpy as np
      global nSigmaCrit, nTlim
-
+     global SigmaCritParams, TlimParams
+     
      localWorkDir    = "%s/%d/" % (workDir,numero)
      localSrcDir     = "%s%s/" % (localWorkDir,Src)
      localResultDir = "%s%s/" % (localSrcDir,Risultati)
@@ -143,13 +147,22 @@ def esoclimi(numero,ecc,obl,dist,p):
      except:
          print 'Simulation did not converge'
 
-     #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL CASES 
+     #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES 
      # (no fits produced in that case!)
      exitValue  = np.loadtxt(localResultDir+fortran_value_result,usecols=25)
-     if np.abs(exitValue + 0.5) < 0.001 :
+     # saving parameters for which we have SB/RG
+     if np.abs(exitValue + 0.5) < 0.001 : #Runaway GreenHouse
          nSigmaCrit += 1
-     elif np.abs(exitValue + 1.0) < 0.001:
+         SigmaCritParams[0] = np.append(SigmaCritParams[0],ecc)
+         SigmaCritParams[1] = np.append(SigmaCritParams[1],obl)
+         SigmaCritParams[2] = np.append(SigmaCritParams[2],dist)
+         SigmaCritParams[3] = np.append(SigmaCritParams[3],p)
+     elif np.abs(exitValue + 1.0) < 0.001: #SnowBall
          nTlim += 1
+         TlimParams[0] = np.append(TlimParams[0],ecc)
+         TlimParams[1] = np.append(TlimParams[1],obl)
+         TlimParams[2] = np.append(TlimParams[2],dist)
+         TlimParams[3] = np.append(TlimParams[3],p)
 
      os.chdir(localWorkDir)
      logging.debug("%d => %s",numero, os.getcwd())
@@ -177,6 +190,8 @@ def esoclimi(numero,ecc,obl,dist,p):
 if __name__ == '__main__':
     
     global nSigmaCrit, nTlim
+    global SigmaCritParams, TlimParams
+
     # make directories where final results are stored
     os.makedirs(RisultatiMultipli)
     os.makedirs(Database)
@@ -216,6 +231,13 @@ if __name__ == '__main__':
     f.write('Total number of runs: %d\n' % numero)
     f.close()
     
+    with open('SnowBall-Params.dat','w') as f:
+        for l in np.matrix(TlimParams).T:
+            np.savetxt(f,l,'%e ')
+
+    with open('RunawayGreenhouse-Params.dat','w') as f:
+        for l in np.matrix(SigmaCritParams).T:
+            np.savetxt(f,l,'%e ')
 
 
 
