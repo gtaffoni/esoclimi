@@ -13,12 +13,14 @@
 		901EDA891E943B1800630C7D /* libraryEBM.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = libraryEBM.py; path = src/libraryEBM.py; sourceTree = "<group>"; };
 		901EDA8A1E9583E900630C7D /* constantsEBM.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = constantsEBM.py; path = src/constantsEBM.py; sourceTree = "<group>"; };
 		90740CD91E8D8E9D00EC1C36 /* database.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = database.py; path = src/database.py; sourceTree = "<group>"; };
+		90CCD1641E9E2A4200A72106 /* Templates */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Templates; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		90740CCD1E8D3C9500EC1C36 = {
 			isa = PBXGroup;
 			children = (
+				90CCD1641E9E2A4200A72106 /* Templates */,
 				901EDA891E943B1800630C7D /* libraryEBM.py */,
 				901EDA881E942ED700630C7D /* runEBM.py */,
 				901EDA871E93EE2200630C7D /* fitslib.py */,
