@@ -800,6 +800,22 @@ c     write mean annual zonal values: latitude, temperature, ftime Eq.(5), OLR
       write(61,35) LumStar/LumSun,omegaPERI,obliq,Prot,fom
  35   format(f7.3,2x,f6.1,2x,f5.1,2x,f4.0,2x,f4.2)
       close(61) 
+
+
+* class of the solution:
+      call LWTR(pressPtot,Tice,Tvapor) 
+      if (annualGlobalT .gt. Tice .and. Tmax .lt. Tvapor ) then
+         exitFlag=1.0 !WARM
+      else if (Tmax .ge. Tvapor ) then
+         exitFlag=2.0 !WARM_HOT
+      else if (iceTOT .gt. 0.99) then
+         exitFlag=3.0 !SNOWBALL
+      else if (annualGlobalT .le. Tice .and. iceTOT .le. 0.99) then
+         exitFlag=4.0 !WATERBELT
+      else
+         exitFlag=-100.0 !UNDEFINED
+      endif
+
       
 c     write a summary of input and output parameters 
       open(unit=28,file='Risultati/valori.txt',status='unknown')
@@ -824,7 +840,6 @@ c     write a summary of input and output parameters
 
 c  This produces the file "esopianeti.par", needed by fits_map_temperature.py to create
 c  the .fits file from the run. The above python script also need year_lat_temp_last1.tlt
-      call LWTR(pressPtot,Tice,Tvapor) 
 
       open(unit=28,file="Risultati/esopianeti.par",status='unknown')
       write(28,'("NAME!",A,"!planet name!STR")') planet

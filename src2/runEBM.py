@@ -24,7 +24,6 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
      from libraryEBM import modulationPAR
      from constantsEBM import *
      import logging
-     import shutil
 
      logging.info("reading %s parameters", planet)
      ### assign parameter values from input better in the future
@@ -36,25 +35,18 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
      p_CO2_P       = _p_CO2_P
      fo_const      = _fo_const
      tabTOAalbfile = _TOAalbfile
-     tabOLRfile    = _OLRfile
+     tabOLDfile    = _OLRfile
 
      ####
-     startpar_file = _dir+"startpar.h"
+     startpar_file = _dir+"planet.h"
      parEBM_file   = _dir+"/parEBM.h"
-     planet_file   = _dir+planet+".h"
-     planet_orig   = _dir+"/planet.h" 
+     planet_File    = _dir+planet+".h"
+
 
 
      #EARTH VALUE! warning it's in PASCAL - this is why I divide by 10, in the calling cycle is in ppvm
-     OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF'] 
-                           # ccm3tab0: OLR calculated with CCM3 taken at face value (no cloud forcing)
-                           # CCMcal00: OLR calibrated with CCM, WITHOUT correction factors
-                           # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
-
-     p_CO2_P /= 10.
-     p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
-     press_E  = 101325.0 + p_CO2_P 
-     R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
+     P_CO2_P /= 10.
+     press_E  = 101325.0 + P_CO2_P 
      pmass    = 1.0 #planet mass in Earth masses  
 
      # calculate parameters c0 and c1 of modulation term, Eqs. (A11), (A12) 
@@ -66,7 +58,7 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
     
      
      # parsing "planet.h", producing planet+".h" (e.g., EARTH.h)  
-     tf=open(planet_orig,'r') # input template file
+     tf=open("planet.h",'r') # input template file
      pf=open(planet_file,'w')        # output parameter file
      
      # updates the EBM parameters file (e.g. parEBM.h) with current values of the planets parameter file (e.g. EARTH.py)
@@ -78,8 +70,8 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
         if 'parameter(planet' in tl and 'character' not in tl:
            pl="        parameter(planet='%s')\n" % planet
 
-        if 'parameter(Pmass' in tl and 'real' not in tl:
-           pl="        parameter(Pmass=%f)\n" % pmass
+        if 'parameter(planet' in tl and 'character' not in tl:
+           pl="        parameter(Pmass='%s')\n" % pmass  #WARNING this is SET not calculated
             
         if 'parameter(smaP' in tl and 'real' not in tl:
            pl='        parameter(smaP=%7.5f) ' % smaP      
@@ -89,6 +81,10 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
            pl='        parameter(eccP=%7.5f) ' % eccP      
            pl=pl+'! eccentricity of planet orbit\n'
                       
+        if 'parameter(obliq' in tl and 'real' not in tl:
+             pl='        parameter(obliq=%8.4f)   ' % obliq
+             pl=pl+'! [deg] planet axis inclination\n'
+
         if 'parameter(gg' in tl and 'integer' not in tl:
            pl='        parameter(gg=%i)   ' % gg
            pl=pl+'! planet geography \n'
@@ -248,10 +244,10 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
      pf.close()
         
      #now, adds the include at the end of startpar.h
-     shutil.copy(startpar_file,parEBM_file)
-     with open(parEBM_file,"a") as f:
+     shutil.copy('startpar.h','parEBM.h')
+     with open("parEBM.h","a") as f:
           f.write('\n')
-          f.write('        include \'%s\'         \n' % (planet+'.h'))
+          f.write('        include \'%s\'         ' % (planet+'.h')
           f.write('\n')
 
 
