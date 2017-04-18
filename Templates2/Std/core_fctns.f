@@ -802,20 +802,21 @@ c     write mean annual zonal values: latitude, temperature, ftime Eq.(5), OLR
       close(61) 
 
 
-* class of the solution:
+* class of the solution (only for CONVERGED sims):
       call LWTR(pressPtot,Tice,Tvapor) 
-      if (annualGlobalT .gt. Tice .and. Tmax .lt. Tvapor ) then
-         exitFlag=1.0 !WARM
-      else if (Tmax .ge. Tvapor ) then
-         exitFlag=2.0 !WARM_HOT
-      else if (iceTOT .gt. 0.99) then
-         exitFlag=3.0 !SNOWBALL
-      else if (annualGlobalT .le. Tice .and. iceTOT .le. 0.99) then
-         exitFlag=4.0 !WATERBELT
-      else
-         exitFlag=-100.0 !UNDEFINED
+      if (exitFlag .ge. 0.0) then
+         if (annualGlobalT .gt. Tice .and. Tmax .lt. Tvapor ) then
+            exitFlag=1.0        !WARM
+         else if (Tmax .ge. Tvapor ) then
+            exitFlag=2.0        !WARM_HOT
+         else if (iceTOT .gt. 0.99) then
+            exitFlag=3.0        !SNOWBALL
+         else if (annualGlobalT .le. Tice .and. iceTOT .le. 0.99) then
+            exitFlag=4.0        !WATERBELT
+         else
+            exitFlag=-200.0     !UNDEFINED
+         endif
       endif
-
       
 c     write a summary of input and output parameters 
       open(unit=28,file='Risultati/valori.txt',status='unknown')

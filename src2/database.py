@@ -55,9 +55,9 @@ TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(
 global gg, fo_const, p_CO2_P, TOAalbfile, OLRfile
 gg         = 0 #geography
 fo_const   = 0.4 #ocean fraction (only for gg=0)
-p_CO2_P    = 38 #CO2 partial pressure IN PPVM
-TOAalbfile = 'CCM_RH60/ALB_g1_rh60_co2x0.1.txt' #chech that these are consistent with p_CO2_P
-OLRfile    = 'CCM_RH60/OLR_g1_rh60_co2x0.1.txt'
+p_CO2_P    = 3800 #CO2 partial pressure IN PPVM
+TOAalbfile = 'CCM_RH60/ALB_g1_rh60_co2x10.txt' #chech that these are consistent with p_CO2_P
+OLRfile    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
 
 # Directories and Files
 template_dir="/data/murante/EsoClimi/VaryCO2/CodeEBM-Feb09-EarthGeo-CO2x0.1-VaryOceanF04/Templates/"
@@ -158,6 +158,7 @@ def esoclimi(numero,ecc,obl,dist,p):
      #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES 
      # (no fits produced in that case!)
      exitValue  = np.loadtxt(localResultDir+fortran_value_result,usecols=25)
+     print 'ExitValue: ', exitValue
      # saving parameters for which we have SB/RG
      if np.abs(exitValue + 0.5) < 0.001 : #Runaway GreenHouse
          nSigmaCrit += 1
