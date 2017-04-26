@@ -53,10 +53,11 @@ def collective_move (src, dest):
         Risultati = results dir
 
 '''
-def archive_results(str,src,Risultati):
+def archive_results(str, src, planet, Risultati):
     import os
     import shutil
     shutil.copy(src+"/parEBM.h",Risultati)
+    shutil.copy(src+"/"+planet+".h",Risultati)
     os.mkdir(str)
     collective_move(Risultati,str)
     return
