@@ -6,69 +6,81 @@
 #  Modified by Guliano Taffoni.
 
 """
-    
-    
+     
     setupEBM(planet,NUMBER=0,VERSION="Unknwn",SIMTYPE="---",_dir):
     
     setup the code for compilation
     
     _dir == location of the source files to setup and compile
     
-    """
+"""
 
 
-def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="---"):
+def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _OLRfile, _dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="---"):
+# REMEMBER TO ADD CALCULUS OF PLANET MASS AND CHANGE BELOW
+
+
      import sys
      from libraryEBM import modulationPAR
      from constantsEBM import *
      import logging
-     # nota, GT: senza questo non importa i parametri del pianeta!!
-     exec 'from %s import *' % planet # import data from planet parameters file
+     import shutil
 
      logging.info("reading %s parameters", planet)
      ### assign parameter values from input better in the future
-     ff    = _p
-     eccP  = _ecc
-     obliq = _obl
-     smaP  = _dist
+     ff            = _p
+     eccP          = _ecc
+     obliq         = _obl
+     smaP          = _dist
+     gg            = _gg
+     p_CO2_P       = _p_CO2_P
+     fo_const      = _fo_const
+     tabTOAalbfile = _TOAalbfile
+     tabOLRfile    = _OLRfile
+
      ####
-     startpar_file = _dir+"/startpar.h"
+     startpar_file = _dir+"startpar.h"
      parEBM_file   = _dir+"/parEBM.h"
+     planet_file   = _dir+planet+".h"
+     planet_orig   = _dir+"/planet.h" 
+
+
+     #EARTH VALUE! warning it's in PASCAL - this is why I divide by 10, in the calling cycle is in ppvm
+     OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF'] 
+                           # ccm3tab0: OLR calculated with CCM3 taken at face value (no cloud forcing)
+                           # CCMcal00: OLR calibrated with CCM, WITHOUT correction factors
+                           # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
+
+     p_CO2_P /= 10.
+     p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
+     press_E  = 101325.0 + p_CO2_P 
+     R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
+     pmass    = 1.0 #planet mass in Earth masses  
+
      # calculate parameters c0 and c1 of modulation term, Eqs. (A11), (A12) 
      C0par,C1par=modulationPAR(obliq,R)
 
+     # calculate cp_P and molwtP given pressure and chemical composition
+     pressP= pressE*ff
+     cp_P,molwtP=AtmPar(pressP,p_CO2_P,p_CH4_P)
+    
      
-     tf=open(startpar_file,'r') # input template file
-     pf=open(parEBM_file,'w')        # output parameter file
+     # parsing "planet.h", producing planet+".h" (e.g., EARTH.h)  
+     tf=open(planet_orig,'r') # input template file
+     pf=open(planet_file,'w')        # output parameter file
      
      # updates the EBM parameters file (e.g. parEBM.h) with current values of the planets parameter file (e.g. EARTH.py)
+     # note: here I will only change the parameter that we are exploring!
      for tl in tf:
      
         pl = tl
         
         if 'parameter(planet' in tl and 'character' not in tl:
            pl="        parameter(planet='%s')\n" % planet
-        
-        if 'parameter(N=' in tl and 'integer' not in tl:
-           pl='	parameter(N=%i)' % N
-           pl=pl+'! latitude grid points\n'
-           
-        if 'parameter(Tstart' in tl and 'real' not in tl:
-           pl='        parameter(Tstart=%5.0f) ' % Tstart      
-           pl=pl+'! initial temperature [HOT START: 350 K]\n'
-     
-        if 'parameter(Mstar' in tl and 'real' not in tl:
-           pl='        parameter(Mstar=%7.3f*Msun)   ' % Mstar
-           pl=pl+'! stellar mass [Msun]\n'
-           
-        if 'parameter(LumStar' in tl and 'real' not in tl:
-           pl='        parameter(LumStar=%8.4f*LumSun)   ' % LumStar
-           pl=pl+'! stellar luminosity [Lsun]\n' 
-           
-        if 'parameter(LumEvol' in tl and 'real' not in tl:
-           pl='        parameter(LumEvol=%7.3f)   ' % LumEvol
-           pl=pl+'! evolving stellar luminosity\n'   
-     
+
+        if 'parameter(Pmass' in tl and 'real' not in tl:
+           pl="        parameter(Pmass=%f)\n" % pmass   #WARNING this is SET not calculated
+            
         if 'parameter(smaP' in tl and 'real' not in tl:
            pl='        parameter(smaP=%7.5f) ' % smaP      
            pl=pl+'! semi-major axis of planet orbit [AU]\n'
@@ -76,33 +88,11 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
         if 'parameter(eccP' in tl and 'real' not in tl:
            pl='        parameter(eccP=%7.5f) ' % eccP      
            pl=pl+'! eccentricity of planet orbit\n'
-           
-        if 'parameter(omegaPERI' in tl and 'real' not in tl:
-           pl='        parameter(omegaPERI=%7.5f) ' % omegaPERI      
-           pl=pl+'! argument of pericenter (from ascending node in the orbital plane)\n'   
-        
-        if 'parameter(Ls0' in tl and 'real' not in tl:
-           pl='        parameter(Ls0=%s)   ' % Ls0_string
-           if 'pi' in Ls0_string: msg='simulation starts at spring equinox'
-           if '0.' in Ls0_string: msg='simulation starts at winter solstice' 
-           pl=pl+'! '+msg+'\n' 
-           
+                      
         if 'parameter(obliq' in tl and 'real' not in tl:
              pl='        parameter(obliq=%8.4f)   ' % obliq
              pl=pl+'! [deg] planet axis inclination\n'
-     
-        if 'parameter(Prot' in tl and 'real' not in tl:
-           pl='        parameter(Prot=%7.3f)   ' % Prot
-           pl=pl+'! planet rotation period\n'
-           
-        if 'parameter(Rplanet' in tl and 'real' not in tl:
-           pl='        parameter(Rplanet=%7.4f*Rearth)   ' % Rplan
-           pl=pl+'! planet radius [m] \n'
-           
-        if 'parameter(gP' in tl:
-           pl='        parameter(gP=%6.2f)   ' % gP
-           pl=pl+'! planet gravitational acceleration\n'
-           
+
         if 'parameter(gg' in tl and 'integer' not in tl:
            pl='        parameter(gg=%i)   ' % gg
            pl=pl+'! planet geography \n'
@@ -111,33 +101,27 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
            pl='        parameter(fo_const=%5.2f)   ' % fo_const
            pl=pl+'! constant ocean fraction (if gg=0) \n'
            
-        if 'parameter(albedoFile' in tl and 'character' not in tl:
-           pl="        parameter(albedoFile='%s')   " % albedoFile
-           pl=pl+'! file with albedo data \n'    
-     
         if 'parameter(TOAalbFile' in tl and 'character' not in tl:
            pl="        parameter(TOAalbFile='%s')   " % tabTOAalbfile
            pl=pl+'! file with TOA albedo matrix \n'     
            
-        if 'parameter(OLRmodel' in tl and 'character' not in tl:
-           pl="	parameter(OLRmodel='%s')\n" % OLRmodel 
-        
         if 'parameter(p_CO2_P' in tl and 'real' not in tl:
            pl='        parameter(p_CO2_P=%9.2e)       ' % p_CO2_P
            pl=pl+'! [Pa] CO2 partial pressure \n' 
            
-     #   if 'parameter(tauIR0' in tl and 'real' not in tl and OLRmodel=='SP':
-     #      pl='        parameter(tauIR0=%7.4f)    ' %  tauIR0
-     #      pl=pl+'! Spiegel et al value=0.79\n'  
-     #      
-     #   if 'parameter(SPindex' in tl and 'real' not in tl and OLRmodel=='SP':
-     #      pl='        parameter(SPindex=%7.4f)    ' %  SPindex
-     #      pl=pl+'! exponent in Spiegel tauIR: (T/273)^SPindex\n'
-          
         if 'parameter(pressP' in tl and 'real' not in tl:
-           pl='        parameter(pressP=%11.5e)   ' % (pressP*ff)
+           pl='        parameter(pressP=%11.5e)   ' % pressP
            pl=pl+'! [Pa] planet total pressure\n'  
      
+        # these are calculated and must be modified
+        if 'parameter(C0par' in tl and 'real' not in tl:
+             pl='        parameter(C0par=%8.5f)         ' % C0par
+             pl=pl+'! diffusion parameter C0\n'
+             
+        if 'parameter(C1par' in tl and 'real' not in tl:
+             pl='        parameter(C1par=%8.5f)         ' % C1par
+             pl=pl+'! diffusion parameter C1\n'
+
         if 'parameter(molwtP' in tl and 'real 'not in tl:
            pl='        parameter(molwtP=%5.2f)   ' % molwtP
            pl=pl+'! Planet atmosphere mean molecular weight\n'
@@ -145,52 +129,8 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
         if 'parameter(cp_P' in tl and 'real 'not in tl:
            pl='        parameter(cp_P=%6.3f)   ' % cp_P
            pl=pl+'! Planet atmosphere specific heat capacity at T=0 C\n' 
-        
-        if 'parameter(D0par' in tl and 'real' not in tl:
-           pl='        parameter(D0par=%5.3f)         ' % D0par
-           pl=pl+'! [W/m2] diffusion parameter D0\n'
-           
-        if 'parameter(Rpar' in tl and 'real' not in tl:
-           pl='        parameter(Rpar=%5.1f)         ' % R
-           pl=pl+'! diffusion parameter R\n'      
-           
-        if 'parameter(C0par' in tl and 'real' not in tl:
-           pl='        parameter(C0par=%8.5f)         ' % C0par
-           pl=pl+'! diffusion parameter C0\n'
-           
-        if 'parameter(C1par' in tl and 'real' not in tl:
-           pl='        parameter(C1par=%8.5f)         ' % C1par
-           pl=pl+'! diffusion parameter C1\n'
-           
-        if 'parameter(asl' in tl and 'real' not in tl:
-           pl='        parameter(asl=%5.2f)         ' % asl
-           pl=pl+'! surface albedo of lands (=0.2 in WK97)\n' 
-           
-        if 'parameter(asil' in tl and 'real' not in tl:
-           pl='        parameter(asil=%5.2f)         ' % asil
-           pl=pl+'! surface albedo of ice on lands (=0.85 Pierrehumbert)\n'
-        
-        if 'parameter(asio' in tl and 'real' not in tl:
-           pl='        parameter(asio=%5.2f)         ' % asio
-           pl=pl+'! surface albedo of ice on ocean (=0.50 Pierrehumbert)\n'
-     
-        if 'parameter(cloudIR' in tl and 'real' not in tl and OLRmodel=='WK':
-           pl='        parameter(cloudIR=%4.1f)         ' % cloudIR
-           pl=pl+'! cloud IR absorption in the outgo [=14 W in WK97]\n'
-     
-        if 'parameter(fcw' in tl and 'real' not in tl:
-           pl='        parameter(fcw=%5.2f)         ' % fcw
-           pl=pl+'! cloud coverage on water (mean from Sanroma & Palle 2011)\n'
-      
-        if 'parameter(fcl' in tl and 'real' not in tl:
-           pl='        parameter(fcl=%5.2f)         ' % fcl
-           pl=pl+'! cloud coverage on land (mean from Sanroma & Palle 2011)\n'
-     
-        if 'parameter(fci' in tl and 'real' not in tl:
-           pl='        parameter(fci=%5.2f)         ' % fci
-           pl=pl+'! cloud coverage on ice (mean from Sanroma & Palle 2011)\n' 
-     
-     # addendum GM, 8/2/2017: data for the generation of the fit file   
+             
+        # addendum GM, 8/2/2017: data for the generation of the fit file   
         if 'parameter(VERSION' in tl and 'character' not in tl:
            pl='        parameter(VERSION="%s")         ' % VERSION
            pl=pl+'!code version\n' 
@@ -311,9 +251,16 @@ def setupEBM(planet,_p,_ecc,_obl,_dist,_dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="-
      tf.close()
      pf.close()
         
-        #print TOLR
-        #print vOLR
+     #now, adds the include at the end of startpar.h
+     shutil.copy(startpar_file,parEBM_file)
+     with open(parEBM_file,"a") as f:
+          f.write('\n')
+          f.write('        include \'%s\'         \n' % (planet+'.h'))
+          f.write('\n')
+
+
      return
+
 
 def compileEBM(runDir,logfile):
     import logging
