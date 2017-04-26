@@ -800,6 +800,23 @@ c     write mean annual zonal values: latitude, temperature, ftime Eq.(5), OLR
       write(61,35) LumStar/LumSun,omegaPERI,obliq,Prot,fom
  35   format(f7.3,2x,f6.1,2x,f5.1,2x,f4.0,2x,f4.2)
       close(61) 
+
+
+* class of the solution (only for CONVERGED sims):
+      call LWTR(pressPtot,Tice,Tvapor) 
+      if (exitFlag .ge. 0.0) then
+         if (annualGlobalT .gt. Tice .and. Tmax .lt. Tvapor ) then
+            exitFlag=1.0        !WARM
+         else if (Tmax .ge. Tvapor ) then
+            exitFlag=2.0        !WARM_HOT
+         else if (iceTOT .gt. 0.99) then
+            exitFlag=3.0        !SNOWBALL
+         else if (annualGlobalT .le. Tice .and. iceTOT .le. 0.99) then
+            exitFlag=4.0        !WATERBELT
+         else
+            exitFlag=-200.0     !UNDEFINED
+         endif
+      endif
       
 c     write a summary of input and output parameters 
       open(unit=28,file='Risultati/valori.txt',status='unknown')
@@ -824,7 +841,6 @@ c     write a summary of input and output parameters
 
 c  This produces the file "esopianeti.par", needed by fits_map_temperature.py to create
 c  the .fits file from the run. The above python script also need year_lat_temp_last1.tlt
-      call LWTR(pressPtot,Tice,Tvapor) 
 
       open(unit=28,file="Risultati/esopianeti.par",status='unknown')
       write(28,'("NAME!",A,"!planet name!STR")') planet
@@ -841,6 +857,8 @@ c  the .fits file from the run. The above python script also need year_lat_temp_
      >"!obliquity of planet rotation axis [deg]!F")') obliq
       write(28,'("PROT!",F16.8,"!planet rotation period [days]!F")') 
      >     Prot
+      write(28,'("MPLAN!",E16.8,
+     >"!planet mass [Earth masses]!F")') Pmass
       write(28,'("RPLAN!",E16.8,
      >"!planet radius [R(earth)=6.371e6 m]!F")') Rplanet
       bfr='("GEO!",I2,
@@ -850,12 +868,12 @@ c  the .fits file from the run. The above python script also need year_lat_temp_
      >     fo_const
       write(28,'("PRESS!",E16.8 
      >"!total dry pressure at planet surface [Pa]!F")') pressP
-      write(28,'("PO2!209460.0!O2 partial pressure [Pa]!F")')    !!!!WARNING, FOR FUTURE USE
-      write(28,'("PN2!780840.0!N2 partial pressure [Pa]!F")')    !!!!WARNING, FOR FUTURE USE
-      write(28,'("P_CO2!",E16.8,"!CO2 partial pressure [Pa]!F")') 
-     >     p_CO2_P
-      write(28,'("P_CH4!1.8!CH4 partial pressure [Pa]!F")') !!!!WARNING, FOR FUTURE USE
-      write(28,'("P_O3!0.0!PO3 partial pressure [Pa]!F")')  !!!!WARNING, FOR FUTURE USE
+      write(28,'("PO2!209460.0!O2 partial pressure [ppvm]!F")')    !!!!WARNING, FOR FUTURE USE
+      write(28,'("PN2!780840.0!N2 partial pressure [ppvm]!F")')    !!!!WARNING, FOR FUTURE USE
+      write(28,'("P_CO2!",E16.8,"!CO2 partial pressure [ppvm]!F")') 
+     >     p_CO2_P*10 !!!WARNING, from Pascal to PPMV
+      write(28,'("P_CH4!1.8!CH4 partial pressure [ppvm]!F")') !!!!WARNING, FOR FUTURE USE
+      write(28,'("P_O3!0.0!PO3 partial pressure [ppvm]!F")')  !!!!WARNING, FOR FUTURE USE
       write(28,'("RH!",F16.8,"!relative humidity!F")') RH
       write(28,'("TMGLOB!",E16.8,"!mean orbital globaltemperature!F")'), 
      > annualGlobalT
@@ -874,17 +892,17 @@ c  the .fits file from the run. The above python script also need year_lat_temp_
      >"!index of continuous liquid-water habitability!F")') chab
       write(28,'("DTEP!",F16.8,
      >"!equator-pole temperature difference!F")') DelT_EP
-      write(28,'("MASR!",F16.8,
-     >"!mean OLR!F")') TotOLR
       write(28,'("MOLR!",F16.8,
+     >"!mean OLR!F")') TotOLR
+      write(28,'("MARS!",F16.8,
      >"!mean ASR !F")') TotASR
       write(28,'("ICE!",F16.8,
      >"!mean global ice coverage!F")') iceTOT
 
 * class of the solution:
-      if (annualGlobalT .gt. Tice .and. annualGlobalT .lt. Tvapor ) then
+      if (annualGlobalT .gt. Tice .and. Tmax .lt. Tvapor ) then
          write(28,'("CLASS! WARM!class of the solution!STR")') 
-      else if (annualGlobalT .ge. Tvapor ) then
+      else if (Tmax .ge. Tvapor ) then
          write(28,'("CLASS! WARM_HOT!class of the solution!STR")') 
       else if (iceTOT .gt. 0.99) then
          write(28,'("CLASS! SNOWBALL!class of the solution!STR")') 

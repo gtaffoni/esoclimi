@@ -21,10 +21,6 @@
     WARNING, 0.001 e 0.005 of pressure are not working
     Pressures are epressed in times the Earth value
 
-    WARNING WARNING WARNING
-    check if it is needed to modify PressP in EARTH.py to have
-    it correct in esopianeti.par (shouldn't)
-
 
 '''
 
@@ -38,6 +34,7 @@ from fitslib import create_FITS
 from thumblib import create_THUMBNAILS
 from workarea import *
 from runEBM import *
+import numpy as np
 
 Pressures=[0.01, 0.1, 0.5, 1.0, 3.0, 5.0]
 Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
@@ -47,14 +44,23 @@ simtype = "Std"
 version = "1.1.03"
 
 # number of non-converged runs
+global nSigmaCrit, nTlim, SigmaCritParams, TlimParams
 nSigmaCrit = 0
 nTlim = 0
 #parameter values for non-converged runs
 SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
 TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
 
+#parameters that are fixed in this run...
+global gg, fo_const, p_CO2_P, TOAalbfile, OLRfile
+gg         = 0 #geography
+fo_const   = 0.4 #ocean fraction (only for gg=0)
+p_CO2_P    = 3800 #CO2 partial pressure IN PPVM
+TOAalbfile = 'CCM_RH60/ALB_g1_rh60_co2x10.txt' #chech that these are consistent with p_CO2_P
+OLRfile    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
+
 # Directories and Files
-template_dir="/home/murante/data/EsoClimi/VaryCO2/CodeEBM-Feb09-EarthGeo-CO2x10-VaryOceanF07/Templates"
+template_dir="/data/murante/EsoClimi/VaryCO2/CodeEBM-Feb09-EarthGeo-CO2x0.1-VaryOceanF04/Templates/"
 workDir = os.getcwd()
 
 RisultatiMultipli = "RisultatiMultipli"
@@ -82,8 +88,8 @@ def make_work_area (_dir):
         
         p    = pressure
         ecc  = eccentricity
-        obl  =
-        dist = distance
+        obl  = obliquity
+        dist = semi-major axis
         
         '''
     # here we need to catch exeptions (necessary on parallel runs)
@@ -97,13 +103,14 @@ def make_work_area (_dir):
     copyall(template_dir+"/Std",localSrc)
     if simtype=="VegPassive":
         copyall(template_dir+"/VegPassive",localSrc)
-        copyall(template_dir+"/VegPassive/Modules/",localSrc)
+        copyall(template_dir+"/VegPassive/Modules/",localSrc) 
     elif simtype=="VegAlbedoFB":
         copyall(template_dir+"/VegAlbedoFB", localSrc)
         copyall(template_dir+"/VegAlbedoFB/Modules/",localSrc)
 
     # varying pressure on an EARTH-LIKE planet, using EARTH template
-    #shutil.copy(template_dir+"/Planets/"+planet,workDir+"/PRESSURES.py")
+    print template_dir+"/Planets/"+planet+".h", localSrc+"/planet.h"
+    shutil.copy(template_dir+"/Planets/"+planet+".h", localSrc+"/planet.h")
     if planet == "EARTH":
         shutil.copy(template_dir+"/Planets/fo_earth_DMAP.dat",localSrc+"/fo_earth_DMAP.dat")
     return
@@ -114,6 +121,7 @@ def esoclimi(numero,ecc,obl,dist,p):
      import numpy as np
      global nSigmaCrit, nTlim
      global SigmaCritParams, TlimParams
+     global gg, fo_const, p_CO2_P, TOAalbfile, OLRfile         
      
      localWorkDir    = "%s/%d/" % (workDir,numero)
      localSrcDir     = "%s%s/" % (localWorkDir,Src)
@@ -130,7 +138,7 @@ def esoclimi(numero,ecc,obl,dist,p):
      #Complile and Run
      str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (numero,version,simtype)
      logging.info("%d => %s",numero, str)
-     setupEBM(planet,p,ecc,obl,dist,localSrcDir,numero,version,simtype)
+     setupEBM(planet, p, ecc, obl, dist, gg, p_CO2_P, fo_const, TOAalbfile, OLRfile, localSrcDir, numero, version, simtype)
      log_file_local=open(localWorkDir+"/out.log",'w')    #open log file name is out.log
      compileEBM(localSrcDir,log_file_local)
      runEBM(localSrcDir,log_file_local)
@@ -150,6 +158,7 @@ def esoclimi(numero,ecc,obl,dist,p):
      #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES 
      # (no fits produced in that case!)
      exitValue  = np.loadtxt(localResultDir+fortran_value_result,usecols=25)
+     print 'ExitValue: ', exitValue
      # saving parameters for which we have SB/RG
      if np.abs(exitValue + 0.5) < 0.001 : #Runaway GreenHouse
          nSigmaCrit += 1
@@ -171,7 +180,7 @@ def esoclimi(numero,ecc,obl,dist,p):
      #archiving Risults
      results_location="%s/Risultati_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(workDir+"/"+RisultatiMultipli,p,ecc,dist,obl)
      logging.debug("%d => Archive results to: %s",numero, results_location)
-     archive_results(results_location,Src,localResultDir)
+     archive_results(results_location,Src,planet,localResultDir)
      
      # close log file and archiving it DO We NEED THAT? YES!
      log_dir_name="%s/%s/log_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(workDir,LogFiles,p,ecc,dist,obl)
@@ -216,6 +225,19 @@ if __name__ == '__main__':
                     numero += 1
                     print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
 
+#    ecc = 0.02
+#    obl = 25.
+#    dist = 1.0
+#    for p in Pressures:
+#        print ' '
+#        print 'Running sim #',numero, 'ecc,obl,sma,p: ', ecc, obl, dist, p
+#        esoclimi(numero,ecc,obl,dist,p)
+#        numero += 1
+#        print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
+#            
+
+
+
 
     print '\n\n\n'
     print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
@@ -241,12 +263,3 @@ if __name__ == '__main__':
 
 
 
-#    ecc = 0.02
-#    obl = 25.
-#    dist = 1.0
-#    for p in Pressures:
-#        print ' '
-#        print 'Running sim #',numero, 'ecc,obl,sma,p: ', ecc, obl, dist, p
-#        esoclimi(numero,ecc,obl,dist,p)
-#        numero += 1
-#            
