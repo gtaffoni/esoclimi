@@ -145,20 +145,19 @@ def esoclimi(numero,ecc,obl,dist,p):
      log_file_local.close()
 
      
-     
-     
+    
      #now we have results. Making .fits file (REQUIRES PYFIT)
      logging.info("%d => %s", numero, "Create FITS file from data")
      try:
          date = create_FITS(localResultDir+fortran_run_result,fits_out_base,localResultDir+fits_param_file)
          create_THUMBNAILS(localResultDir+fortran_run_result,thumbs_out_base, date, numero)
      except:
-         print 'Simulation did not converge'
+         logging.warning("Simulation did not converge")
 
      #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES 
      # (no fits produced in that case!)
      exitValue  = np.loadtxt(localResultDir+fortran_value_result,usecols=25)
-     print 'ExitValue: ', exitValue
+     logging.info('ExitValue: %d', exitValue)
      # saving parameters for which we have SB/RG
      if np.abs(exitValue + 0.5) < 0.001 : #Runaway GreenHouse
          nSigmaCrit += 1
