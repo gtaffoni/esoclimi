@@ -29,6 +29,8 @@ import os
 import shutil
 from posix import system
 import logging
+from mpi4py import MPI
+
 
 from fitslib import create_FITS
 from thumblib import create_THUMBNAILS
@@ -36,15 +38,23 @@ from workarea import *
 from runEBM import *
 import numpy as np
 
-Pressures=[0.01, 0.1, 0.5, 1.0, 3.0, 5.0]
-Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
-Obliquities = [0., 15., 23.43929, 30., 45.]
-Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
+def enum(*sequential, **named):
+    '''
+        simple way to emulate enumerate in python taken from the web
+    '''
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    return type('Enum', (), enums)
+
+
+
 simtype = "Std"
 version = "1.1.03"
 
-# number of non-converged runs
+# GLOBAL Variables
 global nSigmaCrit, nTlim, SigmaCritParams, TlimParams
+global nSigmaCrit, nTlim
+global SigmaCritParams, TlimParams
+
 nSigmaCrit = 0
 nTlim = 0
 #parameter values for non-converged runs
@@ -70,6 +80,7 @@ Risultati ="Risultati"
 Thumbnails = "Thumbnails"
 Src = "Src"
 planet = "EARTH"
+input_filename = workDir+"input.dat"
 
 
 
@@ -198,45 +209,96 @@ def esoclimi(numero,ecc,obl,dist,p):
 
 if __name__ == '__main__':
     
-    global nSigmaCrit, nTlim
-    global SigmaCritParams, TlimParams
+    tags = enum('READY', 'DONE', 'EXIT', 'START')
+
+    comm = MPI.COMM_WORLD # Communicator
+    size = comm.size      # Number of processes
+    rank = comm.rank      # this process
+    status = MPI.Status()
+
+    if rank == 0:
+        simulation_index = 0
+        num_workers = size - 1
+        closed_workers = 0
+        print("Master starting with %d workers" % num_workers)
+        try:
+            infile = open(input_filename,"r")
+        except IOError:
+            print "Cannont open Input File"
+            exit() ##### verify if it exists a proper way to close MPI
 
     # make directories where final results are stored
-    os.makedirs(RisultatiMultipli)
-    os.makedirs(Database)
-    os.makedirs(LogFiles)
-    os.makedirs(Thumbnails)
+        os.makedirs(RisultatiMultipli)
+        os.makedirs(Database)
+        os.makedirs(LogFiles)
+        os.makedirs(Thumbnails)
     ##
     # open a logger
-    logging.basicConfig(level=logging.DEBUG,
+        logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
                     filename=workDir+"/run.log",
                     filemode='w')
 
-    numero=1
-
-    for ecc in Eccentricities:
-        for obl in Obliquities:
-            for dist in Radii:            
-                for p in Pressures:
-                    print ' '
-                    print 'Running sim #',numero, 'ecc,obl,sma,p: ', ecc, obl, dist, p
+        for line in infile:
+            input_params=np.fromstring(line, dtype=float, sep=' ')
+            #print np.fromstring(line, dtype=float, sep=' ')
+            data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+            source = status.Get_source()
+            tag = status.Get_tag()
+            if tag == tags.READY: # Only at first loop
+                comm.send(input_params, dest=source, tag=tags.START)
+                print("FIRSTLOOP: Sending simulation %d to worker %d" % (simulation_index, source))
+                simulation_index += 1
+            elif tag == tags.DONE:
+                results = data # collect results from worker
+                print("DONE: Got data from worker %d: %s" % (source,results))
+                comm.send(input_params, dest=source, tag=tags.START) #send new data to worker
+                simulation_index += 1
+            elif tag == tags.EXIT: # ERROR: we should not be here!!!!
+                print("ERROR: Worker %d exited." % source)
+                closed_workers+=1
+    else: # working tasks
+        name = MPI.Get_processor_name()
+        print("I am a worker with rank %d on %s." % (rank, name))
+        local_simulation_index = 0
+        while True:
+            if local_simulation_index == 0:
+                local_simulation_index += 1
+                comm.send(None, dest=0, tag=tags.READY)
+                #print("DEBUG %d,0 BEGIN Send READY" % rank )
+                inputParams = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                #print("DEBUG %d,0 BEGIN receive" % rank )
+                tag = status.Get_tag()
+                print("Receive simulation on worker %d from  0"  % (rank))
+                if tag == tags.START:
+                    print("DEBUG %d,0: begin computation" % (rank))
                     esoclimi(numero,ecc,obl,dist,p)
-                    numero += 1
-                    print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
+                    result = "HO FATTO"
+                    comm.send(result, dest=0, tag=tags.DONE)
+                #print("DEBUG %d,0 BEGIN send" % rank )
+                elif tag == tags.EXIT:
+                    comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
+            else:
+                #print("DEBUG %d,0 LOOP begin" % rank )
+                local_simulation_index += 1
+                inputParams = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                tag = status.Get_tag()
+                if tag == tags.START:
+                    print("DEBUG %d,0: loop computation" % (rank))
+                    esoclimi(numero,ecc,obl,dist,p)
+                    result = "HO FATTO"
+                    comm.send(result, dest=0, tag=tags.DONE)
+                elif tag == tags.EXIT:
+                        break
+        comm.send(None, dest=0, tag=tags.EXIT)
 
-#    ecc = 0.02
-#    obl = 25.
-#    dist = 1.0
-#    for p in Pressures:
-#        print ' '
-#        print 'Running sim #',numero, 'ecc,obl,sma,p: ', ecc, obl, dist, p
-#        esoclimi(numero,ecc,obl,dist,p)
-#        numero += 1
-#        print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
-#            
 
 
+
+
+
+
+    print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
 
 
     print '\n\n\n'
