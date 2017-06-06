@@ -205,7 +205,6 @@ def make_input_parameters(_data,parameters):
 if __name__ == '__main__':
     
     tags = enum('READY', 'DONE', 'EXIT', 'START')
-
     comm = MPI.COMM_WORLD # Communicator
     size = comm.size      # Number of processes
     rank = comm.rank      # this process
@@ -217,8 +216,8 @@ if __name__ == '__main__':
     #parameter values for non-converged runs
     SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-    
     # make directories where final results are stored
+    exit(0)
     if rank == 0:
         os.makedirs(RisultatiMultipli)
         os.makedirs(Database)
@@ -226,11 +225,11 @@ if __name__ == '__main__':
         os.makedirs(Thumbnails)
     #
     # open a logger (one each task==rank)
-    comm.Barrier()
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
                         filename=workDir+"/run_"+rank+".log",
                         filemode='w')
+    exit(0)
 
     if rank == 0:
         simulation_index = 0
@@ -240,6 +239,8 @@ if __name__ == '__main__':
         with open(computed_models_file, "w") as myfile:
             myfile.write("# p, ecc, obl, dist")
         logging.info("Master starting with %d workers" % num_workers)
+        print ("Master starting with %d workers" % num_workers)
+
         try:
             infile = open(input_filename,"r")
         except IOError:
@@ -299,9 +300,6 @@ if __name__ == '__main__':
         ## END and close inputfile
         #
         infile.close()
-
-
-
     else: # working tasks
         name = MPI.Get_processor_name()
         logging.info("I am a worker with rank %d on %s." % (rank, name))
