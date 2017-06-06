@@ -186,16 +186,19 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
 
 
 def make_input_parameters(_data,parameters):
+    '''
+        Convert input from rank 0 into set of parametes
+    '''
     input_params=np.fromstring(_data[1], dtype=float, sep=' ')
     parameters['gg']         = 0      #geography
     parameters['fo_const']   = 0.4    #ocean fraction (only for gg=0)
     parameters['p_CO2_P']    = 3800   #CO2 partial pressure IN PPVM
     parameters['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
     parameters['OLRfile']    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
-    parameters['dist'] = input_params[3]          # semi-major axis of planet orbit
-    parameters['obl'] = input_params[2]           # planet axis inclination
-    parameters['ecc'] = input_params[1]          # eccentricity of planet orbit
-    parameters['p'] = input_params[0]   #pressure
+    parameters['dist'] = input_params[3]    # semi-major axis of planet orbit
+    parameters['obl'] = input_params[2]     # planet axis inclination
+    parameters['ecc'] = input_params[1]     # eccentricity of planet orbit
+    parameters['p'] = input_params[0]       # pressure
     parameters['number'] = _data[0]
     return(parameters)
 
@@ -233,6 +236,9 @@ if __name__ == '__main__':
         simulation_index = 0
         num_workers = size - 1
         closed_workers = 0
+        computed_models_file=workDir+"/executed.out"
+        with open(computed_models_file, "w") as myfile:
+            myfile.write("# p, ecc, obl, dist")
         logging.info("Master starting with %d workers" % num_workers)
         try:
             infile = open(input_filename,"r")
@@ -250,7 +256,9 @@ if __name__ == '__main__':
                 simulation_index += 1
             elif tag == tags.DONE:
                 results = data # collect results from worker
-                print("tags.DONE Got data from worker %d: %s" % (source,results))
+                with open(computed_models_file, "a") as myfile:
+                        myfile.write(results)
+                logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 simulation_index += 1
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
@@ -268,6 +276,8 @@ if __name__ == '__main__':
                 comm.send(None, dest=source, tag=tags.EXIT)
             elif tag == tags.DONE: # collect results from running workers and ask to exit
                 results = data
+                with open(computed_models_file, "a") as myfile:
+                    myfile.write(results)
                 logging.info("EXIT: Got data from worker %d" % source)
                 comm.send(None, dest=source, tag=tags.EXIT)
             elif tag == tags.EXIT: # Collect extit reply from workers
@@ -307,7 +317,7 @@ if __name__ == '__main__':
                 if tag == tags.START:
                     logging.debug("%d,0: begin computation" % (rank))
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
-                    comm.send(inputdata, dest=0, tag=tags.DONE)
+                    comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
             else:
@@ -317,7 +327,7 @@ if __name__ == '__main__':
                 tag = status.Get_tag()
                 if tag == tags.START:
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
-                    comm.send(inputdata, dest=0, tag=tags.DONE)
+                    comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                         break
         non_converging_data = [nSigmaCrit,nTlim,SigmaCritParams,TlimParams]
