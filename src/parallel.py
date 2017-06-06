@@ -52,7 +52,7 @@ Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 Obliquities = [0., 15., 23.43929, 30., 45.]
 Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
-Parameter_set = {'simtype': "Std", 'version': "1.1.03" }
+Parameter_set = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 
 # Directories and Files
 template_dir="/home/LAVORO/Programming/Esoclimi/Devel/Templates/"
@@ -64,7 +64,6 @@ LogFiles = "LogFiles"
 Risultati ="Risultati"
 Thumbnails = "Thumbnails"
 Src = "Src"
-planet = "EARTH"
 
 fits_out_base = workDir+"/Database/ESTM1.1.01-"     # base name of the FITs output
 thumbs_out_base = workDir+"/Thumbnails/ESTM1.1.01-"     # base name of the FITs output
@@ -96,17 +95,16 @@ def make_work_area (_dir):
     copyall(template_dir+"/ModulesDef", localSrc) # they are all empty files ????
     
     copyall(template_dir+"/Std",localSrc)
-    if simtype=="VegPassive":
+    if Parameter_set['simtype']=="VegPassive":
         copyall(template_dir+"/VegPassive",localSrc)
         copyall(template_dir+"/VegPassive/Modules/",localSrc) 
-    elif simtype=="VegAlbedoFB":
+    elif Parameter_set['simtype']=="VegAlbedoFB":
         copyall(template_dir+"/VegAlbedoFB", localSrc)
         copyall(template_dir+"/VegAlbedoFB/Modules/",localSrc)
 
     # varying pressure on an EARTH-LIKE planet, using EARTH template
-    print template_dir+"/Planets/"+planet+".h", localSrc+"/planet.h"
-    shutil.copy(template_dir+"/Planets/"+planet+".h", localSrc+"/planet.h")
-    if planet == "EARTH":
+    shutil.copy(template_dir+"/Planets/"+Parameter_set['planet']+".h", localSrc+"/planet.h")
+    if Parameter_set['planet'] == "EARTH":
         shutil.copy(template_dir+"/Planets/fo_earth_DMAP.dat",localSrc+"/fo_earth_DMAP.dat")
     return
 
@@ -217,7 +215,6 @@ if __name__ == '__main__':
     SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     # make directories where final results are stored
-    exit(0)
     if rank == 0:
         os.makedirs(RisultatiMultipli)
         os.makedirs(Database)
@@ -227,9 +224,8 @@ if __name__ == '__main__':
     # open a logger (one each task==rank)
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(levelname)s %(message)s',
-                        filename=workDir+"/run_"+rank+".log",
+                        filename=workDir+"/run_"+str(rank)+".log",
                         filemode='w')
-    exit(0)
 
     if rank == 0:
         simulation_index = 0
@@ -237,10 +233,10 @@ if __name__ == '__main__':
         closed_workers = 0
         computed_models_file=workDir+"/executed.out"
         with open(computed_models_file, "w") as myfile:
-            myfile.write("# p, ecc, obl, dist")
+            myfile.write("# p, ecc, obl, dist\n")
         logging.info("Master starting with %d workers" % num_workers)
         print ("Master starting with %d workers" % num_workers)
-
+        input_filename=workDir+"/input.txt"
         try:
             infile = open(input_filename,"r")
         except IOError:
@@ -309,11 +305,11 @@ if __name__ == '__main__':
                 local_simulation_index += 1
                 comm.send(None, dest=0, tag=tags.READY)
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-                Parameter_set = make_input_parameters(inputdata,Parameter_set)
                 tag = status.Get_tag()
                 logging.info("Receive simulation on worker %d from  0"  % (rank))
                 if tag == tags.START:
                     logging.debug("%d,0: begin computation" % (rank))
+                    Parameter_set = make_input_parameters(inputdata,Parameter_set)
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
@@ -321,9 +317,9 @@ if __name__ == '__main__':
             else:
                 local_simulation_index += 1
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-                Parameter_set = make_input_parameters(inputdata,Parameter_set)
                 tag = status.Get_tag()
                 if tag == tags.START:
+                    Parameter_set = make_input_parameters(inputdata,Parameter_set)
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
@@ -335,16 +331,16 @@ if __name__ == '__main__':
         print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
         print '\n\n\n'
         print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
-        print 'Fractions: ', 1.0*nSigmaCrit/numero, 1.0*nTlim/numero
-        print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero
-        print '\n Total number of runs: ',numero
+        print 'Fractions: ', 1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index
+        print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index
+        print '\n Total number of runs: ',simulation_index
 
         #recording these on a file!
         f=open('NonConverged.dat','w')
         f.write('nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): %d %d \n' % (nSigmaCrit,  nTlim) )
-        f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/numero, 1.0*nTlim/numero) )
-        f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero))
-        f.write('Total number of runs: %d\n' % numero)
+        f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index) )
+        f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index))
+        f.write('Total number of runs: %d\n' % simulation_index)
         f.close()
     
         with open('SnowBall-Params.dat','w') as f:
