@@ -185,6 +185,20 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      return(nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
 
 
+def make_input_parameters(_data,parameters):
+    input_params=np.fromstring(_data[1], dtype=float, sep=' ')
+    parameters['gg']         = 0      #geography
+    parameters['fo_const']   = 0.4    #ocean fraction (only for gg=0)
+    parameters['p_CO2_P']    = 3800   #CO2 partial pressure IN PPVM
+    parameters['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
+    parameters['OLRfile']    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
+    parameters['dist'] = input_params[3]          # semi-major axis of planet orbit
+    parameters['obl'] = input_params[2]           # planet axis inclination
+    parameters['ecc'] = input_params[1]          # eccentricity of planet orbit
+    parameters['p'] = input_params[0]   #pressure
+    parameters['number'] = _data[0]
+    return(parameters)
+
 if __name__ == '__main__':
     
     tags = enum('READY', 'DONE', 'EXIT', 'START')
@@ -193,8 +207,8 @@ if __name__ == '__main__':
     size = comm.size      # Number of processes
     rank = comm.rank      # this process
     status = MPI.Status()
-#
-# number of non-converged runs
+    #
+    # number of non-converged runs
     nSigmaCrit = 0
     nTlim = 0
     #parameter values for non-converged runs
@@ -207,7 +221,7 @@ if __name__ == '__main__':
         os.makedirs(Database)
         os.makedirs(LogFiles)
         os.makedirs(Thumbnails)
-    ##
+    #
     # open a logger (one each task==rank)
     comm.Barrier()
     logging.basicConfig(level=logging.DEBUG,
@@ -219,7 +233,7 @@ if __name__ == '__main__':
         simulation_index = 0
         num_workers = size - 1
         closed_workers = 0
-        print("Master starting with %d workers" % num_workers)
+        logging.info("Master starting with %d workers" % num_workers)
         try:
             infile = open(input_filename,"r")
         except IOError:
@@ -227,100 +241,111 @@ if __name__ == '__main__':
             exit() ##### verify if it exists a proper way to close MPI
 
         for line in infile:
-            input_params=np.fromstring(line, dtype=float, sep=' ')
-            #print np.fromstring(line, dtype=float, sep=' ')
-            Parameter_set['gg']         = 0      #geography
-            Parameter_set['fo_const']   = 0.4    #ocean fraction (only for gg=0)
-            Parameter_set['p_CO2_P']    = 3800   #CO2 partial pressure IN PPVM
-            #check that these are consistent with p_CO2_P
-            Parameter_set['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
-            Parameter_set['OLRfile']    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
-            Parameter_set['dist'] = 1.0          # semi-major axis of planet orbit
-            Parameter_set['obl'] = 25.           # planet axis inclination
-            Parameter_set['ecc'] = 0.02          # eccentricity of planet orbit
-            Parameter_set['number'] = numero
-            Parameter_set['planet'] = planet
-            Parameter_set['p'] = p
             data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
             tag = status.Get_tag()
             if tag == tags.READY: # Only at first loop
-                comm.send(input_params, dest=source, tag=tags.START)
-                print("FIRSTLOOP: Sending simulation %d to worker %d" % (simulation_index, source))
+                comm.send([simulation_index,line], dest=source, tag=tags.START)
+                logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
                 simulation_index += 1
             elif tag == tags.DONE:
                 results = data # collect results from worker
-                print("DONE: Got data from worker %d: %s" % (source,results))
-                comm.send(input_params, dest=source, tag=tags.START) #send new data to worker
+                print("tags.DONE Got data from worker %d: %s" % (source,results))
+                comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 simulation_index += 1
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
-                print("ERROR: Worker %d exited." % source)
+                logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
+    
+        #
+        ## INPUT file completed. Collect running worker results end ask them to exit
+        #
+        while closed_workers < num_workers:
+            data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+            source = status.Get_source()
+            tag = status.Get_tag()
+            if tag == tags.READY: # Should not happen unless total simulations < numer_of_workers
+                comm.send(None, dest=source, tag=tags.EXIT)
+            elif tag == tags.DONE: # collect results from running workers and ask to exit
+                results = data
+                logging.info("EXIT: Got data from worker %d" % source)
+                comm.send(None, dest=source, tag=tags.EXIT)
+            elif tag == tags.EXIT: # Collect extit reply from workers
+                logging.info("EXIT: Worker %d exited." % source)
+                closed_workers+=1
+                nSigmaCrit = nSigmaCrit + data[0]
+                nTlim = nTlim + data[1]
+                SigmaCritParams[0] = np.append(SigmaCritParams[0],data[2][0])
+                SigmaCritParams[1] = np.append(SigmaCritParams[1],data[2][1])
+                SigmaCritParams[2] = np.append(SigmaCritParams[2],data[2][2])
+                SigmaCritParams[3] = np.append(SigmaCritParams[3],data[2][3])
+                TlimParams[0] = np.append(TlimParams[0],data[3][0])
+                TlimParams[1] = np.append(TlimParams[1],data[3][1])
+                TlimParams[2] = np.append(TlimParams[2],data[3][2])
+                TlimParams[3] = np.append(TlimParams[3],data[3][3])
+
+
+        #
+        ## END and close inputfile
+        #
+        infile.close()
+
+
+
     else: # working tasks
         name = MPI.Get_processor_name()
-        print("I am a worker with rank %d on %s." % (rank, name))
+        logging.info("I am a worker with rank %d on %s." % (rank, name))
         local_simulation_index = 0
         while True:
             if local_simulation_index == 0:
                 local_simulation_index += 1
                 comm.send(None, dest=0, tag=tags.READY)
-                #print("DEBUG %d,0 BEGIN Send READY" % rank )
-                inputParams = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
-                #print("DEBUG %d,0 BEGIN receive" % rank )
+                inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                Parameter_set = make_input_parameters(inputdata,Parameter_set)
                 tag = status.Get_tag()
-                print("Receive simulation on worker %d from  0"  % (rank))
+                logging.info("Receive simulation on worker %d from  0"  % (rank))
                 if tag == tags.START:
-                    print("DEBUG %d,0: begin computation" % (rank))
-                    esoclimi(numero,ecc,obl,dist,p)
-                    result = "HO FATTO"
-                    comm.send(result, dest=0, tag=tags.DONE)
-                #print("DEBUG %d,0 BEGIN send" % rank )
+                    logging.debug("%d,0: begin computation" % (rank))
+                    nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
+                    comm.send(inputdata, dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
             else:
-                #print("DEBUG %d,0 LOOP begin" % rank )
                 local_simulation_index += 1
-                inputParams = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
+                Parameter_set = make_input_parameters(inputdata,Parameter_set)
                 tag = status.Get_tag()
                 if tag == tags.START:
-                    print("DEBUG %d,0: loop computation" % (rank))
-                    esoclimi(numero,ecc,obl,dist,p)
-                    result = "HO FATTO"
-                    comm.send(result, dest=0, tag=tags.DONE)
+                    nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
+                    comm.send(inputdata, dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                         break
-        comm.send(None, dest=0, tag=tags.EXIT)
+        non_converging_data = [nSigmaCrit,nTlim,SigmaCritParams,TlimParams]
+        comm.send(non_converging_data, dest=0, tag=tags.EXIT)
 
+    if rank == 0:
+        print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
+        print '\n\n\n'
+        print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
+        print 'Fractions: ', 1.0*nSigmaCrit/numero, 1.0*nTlim/numero
+        print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero
+        print '\n Total number of runs: ',numero
 
-
-
-
-
-
-    print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
-
-
-    print '\n\n\n'
-    print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
-    print 'Fractions: ', 1.0*nSigmaCrit/numero, 1.0*nTlim/numero
-    print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero
-    print '\n Total number of runs: ',numero
-
-    #recording these on a file!
-    f=open('NonConverged.dat','w')
-    f.write('nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): %d %d \n' % (nSigmaCrit,  nTlim) )
-    f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/numero, 1.0*nTlim/numero) )
-    f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero))
-    f.write('Total number of runs: %d\n' % numero)
-    f.close()
+        #recording these on a file!
+        f=open('NonConverged.dat','w')
+        f.write('nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): %d %d \n' % (nSigmaCrit,  nTlim) )
+        f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/numero, 1.0*nTlim/numero) )
+        f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero))
+        f.write('Total number of runs: %d\n' % numero)
+        f.close()
     
-    with open('SnowBall-Params.dat','w') as f:
-        for l in np.matrix(TlimParams).T:
-            np.savetxt(f,l,'%e ')
+        with open('SnowBall-Params.dat','w') as f:
+            for l in np.matrix(TlimParams).T:
+                np.savetxt(f,l,'%e ')
 
-    with open('RunawayGreenhouse-Params.dat','w') as f:
-        for l in np.matrix(SigmaCritParams).T:
-            np.savetxt(f,l,'%e ')
+        with open('RunawayGreenhouse-Params.dat','w') as f:
+            for l in np.matrix(SigmaCritParams).T:
+                np.savetxt(f,l,'%e ')
 
 
 
