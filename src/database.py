@@ -107,7 +107,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      localResultDir = "%s%s/" % (localSrcDir,Risultati)
      os.chdir(workDir)
      os.mkdir(localWorkDir)
-     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'])
+     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2%5.3f_GG%5.3f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['p_CO2_P'],Parameter_set['gg'])
 
      # initilize log file for simulation
      
