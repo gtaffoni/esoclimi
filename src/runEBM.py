@@ -16,62 +16,64 @@
 """
 
 
-def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _OLRfile, _dir,NUMBER=0,VERSION="Unknwn",SIMTYPE="---"):
+def setupEBM(parameters,_dir):
 # REMEMBER TO ADD CALCULUS OF PLANET MASS AND CHANGE BELOW
+    import sys
+    from libraryEBM import modulationPAR
+    from constantsEBM import *
+    import logging
+    import shutil
 
+    NUMBER = parameters['number']
+    VERSION = parameters['version']
+    SIMTYPE = parameters['simtype']
+    planet = parameters['planet']
+    logging.info("reading %s parameters", planet)
+    ### assign parameter values from input better in the future
+    ff            = parameters['p']
+    eccP          = parameters['ecc']
+    obliq         = parameters['obl']
+    smaP          = parameters['dist']
+    gg            = parameters['gg']
+    p_CO2_P       = parameters['p_CO2_P']
+    fo_const      = parameters['fo_const']
+    tabTOAalbfile = parameters['TOAalbfile']
+    tabOLRfile    = parameters['OLRfile']
 
-     import sys
-     from libraryEBM import modulationPAR
-     from constantsEBM import *
-     import logging
-     import shutil
-
-     logging.info("reading %s parameters", planet)
-     ### assign parameter values from input better in the future
-     ff            = _p
-     eccP          = _ecc
-     obliq         = _obl
-     smaP          = _dist
-     gg            = _gg
-     p_CO2_P       = _p_CO2_P
-     fo_const      = _fo_const
-     tabTOAalbfile = _TOAalbfile
-     tabOLRfile    = _OLRfile
-
-     ####
-     startpar_file = _dir+"startpar.h"
-     parEBM_file   = _dir+"/parEBM.h"
-     planet_file   = _dir+planet+".h"
-     planet_orig   = _dir+"/planet.h" 
+    ####
+    startpar_file = _dir+"startpar.h"
+    parEBM_file   = _dir+"/parEBM.h"
+    planet_file   = _dir+planet+".h"
+    planet_orig   = _dir+"/planet.h"
 
 
      #EARTH VALUE! warning it's in PASCAL - this is why I divide by 10, in the calling cycle is in ppvm
-     OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF'] 
+    OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF']
                            # ccm3tab0: OLR calculated with CCM3 taken at face value (no cloud forcing)
                            # CCMcal00: OLR calibrated with CCM, WITHOUT correction factors
                            # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
 
-     p_CO2_P /= 10.
-     p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
-     press_E  = 101325.0 + p_CO2_P 
-     R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
-     pmass    = 1.0 #planet mass in Earth masses  
+    p_CO2_P /= 10.
+    p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
+    press_E  = 101325.0 + p_CO2_P
+    R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
+    pmass    = 1.0 #planet mass in Earth masses
 
      # calculate parameters c0 and c1 of modulation term, Eqs. (A11), (A12) 
-     C0par,C1par=modulationPAR(obliq,R)
+    C0par,C1par=modulationPAR(obliq,R)
 
      # calculate cp_P and molwtP given pressure and chemical composition
-     pressP= pressE*ff
-     cp_P,molwtP=AtmPar(pressP,p_CO2_P,p_CH4_P)
+    pressP= pressE*ff
+    cp_P,molwtP=AtmPar(pressP,p_CO2_P,p_CH4_P)
     
      
      # parsing "planet.h", producing planet+".h" (e.g., EARTH.h)  
-     tf=open(planet_orig,'r') # input template file
-     pf=open(planet_file,'w')        # output parameter file
+    tf=open(planet_orig,'r') # input template file
+    pf=open(planet_file,'w')        # output parameter file
      
      # updates the EBM parameters file (e.g. parEBM.h) with current values of the planets parameter file (e.g. EARTH.py)
      # note: here I will only change the parameter that we are exploring!
-     for tl in tf:
+    for tl in tf:
      
         pl = tl
         
@@ -147,7 +149,7 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
      
      ###############   OLR taken from ccm3 calculations  
      
-     if OLRmodel=='ccm3tab0':
+    if OLRmodel=='ccm3tab0':
      
         # EXTRACT AN ARRAY OF OLR values VERSUS TEMPERATURE
         # APPROPRIATE FOR THE ADOPTED PRESSURE
@@ -248,18 +250,18 @@ def setupEBM(planet,_p,_ecc,_obl,_dist, _gg, _p_CO2_P, _fo_const, _TOAalbfile, _
         	 pl=pl+'     >     ' 
         pf.write(pl)
         
-     tf.close()
-     pf.close()
+    tf.close()
+    pf.close()
         
      #now, adds the include at the end of startpar.h
-     shutil.copy(startpar_file,parEBM_file)
-     with open(parEBM_file,"a") as f:
+    shutil.copy(startpar_file,parEBM_file)
+    with open(parEBM_file,"a") as f:
           f.write('\n')
           f.write('        include \'%s\'         \n' % (planet+'.h'))
           f.write('\n')
 
 
-     return
+    return
 
 
 def compileEBM(runDir,logfile):
@@ -274,7 +276,6 @@ def compileEBM(runDir,logfile):
     logging.info("")
     p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
     # p is the return code of Make so we can make some check
-    #system('make')
     os.chdir(origin)
 
 
