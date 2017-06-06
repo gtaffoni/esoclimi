@@ -204,19 +204,17 @@ if __name__ == '__main__':
 #                    esoclimi(numero, planet, p, ecc, obl, dist, gg, p_CO2_P, fo_const, TOAalbfile, OLRfile, version, simtype)
 #                    numero += 1
 #                    print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
-
-    #parameters that are fixed in this run.
+#   vel rotazione, raggio pianeta, gravita' pianeta
+    #parameters that may in a run
     Parameter_set['gg']         = 0      #geography
     Parameter_set['fo_const']   = 0.4    #ocean fraction (only for gg=0)
     Parameter_set['p_CO2_P']    = 3800   #CO2 partial pressure IN PPVM
     #check that these are consistent with p_CO2_P
     Parameter_set['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
     Parameter_set['OLRfile']    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
-    
-    # paramters that viary in this run
-    Parameter_set['dist'] = 1.0
-    Parameter_set['obl'] = 25.
-    Parameter_set['ecc'] = 0.02
+    Parameter_set['dist'] = 1.0          # semi-major axis of planet orbit
+    Parameter_set['obl'] = 25.           # planet axis inclination
+    Parameter_set['ecc'] = 0.02          # eccentricity of planet orbit
     Parameter_set['number'] = numero
     Parameter_set['planet'] = planet
     for p in Pressures:
@@ -227,19 +225,7 @@ if __name__ == '__main__':
         print 'Parameter_set nSigmaCrit, nTlim: ', Parameter_set['p'], nSigmaCrit,  nTlim
 
 
-
-#    for p in Pressures:
-#        print ' '
-#        print 'Running sim #',numero, 'ecc,obl,sma,p: ', ecc, obl, dist, p
-#        esoclimi(numero,ecc,obl,dist,p)
-#        numero += 1
-#        print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
-#            
-
-
-
-
-    print '\n\n\n'
+    print '\n'
     print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
     print 'Fractions: ', 1.0*nSigmaCrit/numero, 1.0*nTlim/numero
     print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / numero
