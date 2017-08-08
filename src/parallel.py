@@ -47,10 +47,6 @@ def enum(*sequential, **named):
 
 
 
-Pressures=[0.01, 0.1, 0.5, 1.0, 3.0, 5.0]
-Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
-Obliquities = [0., 15., 23.43929, 30., 45.]
-Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 Parameter_set = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 
@@ -111,6 +107,9 @@ def make_work_area (_dir):
 
 
 def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
+    '''
+        esoclimi main function
+        '''
      import numpy as np
 
      localWorkDir    = "%s/%d/" % (workDir,Parameter_set['number'])
@@ -185,7 +184,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
 
 def make_input_parameters(_data,parameters):
     '''
-        Convert input from rank 0 into set of parametes
+        Convert input from rank 0 into set of parametes on rank i
     '''
     input_params=np.fromstring(_data[1], dtype=float, sep=' ')
     parameters['gg']         = 0      #geography
@@ -290,9 +289,6 @@ if __name__ == '__main__':
                 TlimParams[1] = np.append(TlimParams[1],data[3][1])
                 TlimParams[2] = np.append(TlimParams[2],data[3][2])
                 TlimParams[3] = np.append(TlimParams[3],data[3][3])
-
-
-        #
         ## END and close inputfile
         #
         infile.close()
@@ -308,25 +304,30 @@ if __name__ == '__main__':
                 tag = status.Get_tag()
                 logging.info("Receive simulation on worker %d from  0"  % (rank))
                 if tag == tags.START:
-                    logging.debug("%d,0: begin computation" % (rank))
+                    logging.debug("%d,0: begin computation number" % (rank,local_simulation_index))
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
+                    # execute esoclimi
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
-                    comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
+                    comm.send(None, dest=0, tag=tags.EXIT) # close task mpi e exit (this should not happen here!!!)
             else:
                 local_simulation_index += 1
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
                 if tag == tags.START:
+                    logging.debug("%d,0: begin computation number" % (rank,local_simulation_index))
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
+                    # execute esoclimi
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                         break
         non_converging_data = [nSigmaCrit,nTlim,SigmaCritParams,TlimParams]
         comm.send(non_converging_data, dest=0, tag=tags.EXIT)
-
+#
+# FINAL  on RANK 0 (collect data for non converging models)
+    comm.Barrier()
     if rank == 0:
         print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
         print '\n\n\n'
