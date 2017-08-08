@@ -7,6 +7,7 @@
 #   GM created
 #   GT 29/3/17 some small improvements
 #   GM 11/4 fix small bugs, log non-convergent sim
+#   GM 19/7 integrated Michele Maris atmosphere thickness computation
 #
 
 '''
@@ -36,6 +37,7 @@ from fitslib import create_FITS
 from thumblib import create_THUMBNAILS
 from workarea import *
 from runEBM import *
+from tAtmo import *
 import numpy as np
 
 def enum(*sequential, **named):
@@ -47,13 +49,19 @@ def enum(*sequential, **named):
 
 
 
+Pressures=[0.01, 0.1, 0.5, 1.0, 3.0, 5.0]
+Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+Obliquities = [0., 15., 23.43929, 30., 45.]
+Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 Parameter_set = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 
 # Directories and Files
-template_dir="/home/LAVORO/Programming/Esoclimi/Devel/Templates/"
+#template_dir="/home/LAVORO/Programming/Esoclimi/Devel/Templates/"
+#template_dir="/home/murante/data/EsoClimi/ProvaMpiPiuMichele/Templates/"
+template_dir="/beegfs/gmurante/Esoclimi/MPItest3/Templates/"
 workDir = os.getcwd()
-
+ 
 RisultatiMultipli = "RisultatiMultipli"
 Database = "Database"
 LogFiles = "LogFiles"
@@ -102,14 +110,15 @@ def make_work_area (_dir):
     shutil.copy(template_dir+"/Planets/"+Parameter_set['planet']+".h", localSrc+"/planet.h")
     if Parameter_set['planet'] == "EARTH":
         shutil.copy(template_dir+"/Planets/fo_earth_DMAP.dat",localSrc+"/fo_earth_DMAP.dat")
+
+
+
     return
 
-
+    
+ 
 
 def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
-    '''
-        esoclimi main function
-        '''
      import numpy as np
 
      localWorkDir    = "%s/%d/" % (workDir,Parameter_set['number'])
@@ -117,7 +126,10 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      localResultDir = "%s%s/" % (localSrcDir,Risultati)
      os.chdir(workDir)
      os.mkdir(localWorkDir)
-     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2%5.3f_GG%5.3f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['p_CO2_P'],Parameter_set['gg'])
+
+
+
+     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2%5.3f_GG%d"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['p_CO2_P'],Parameter_set['gg'])
      # initilize log file for simulation
      
      logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dits=%s",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'])
@@ -125,16 +137,35 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      os.chdir(localWorkDir)
      
      logging.info("%s",os.getcwd())
+
      #Complile and Run
      str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (Parameter_set['number'],Parameter_set['version'],Parameter_set['simtype'])
      logging.info("%d => %s",Parameter_set['number'], str)
      setupEBM(Parameter_set,localSrcDir)
      log_file_local=open(localWorkDir+"/out.log",'w')    #open log file name is out.log
+
+     ###########################
+     # compiling and running   #
+     ###########################
      compileEBM(localSrcDir,log_file_local)
      runEBM(localSrcDir,log_file_local)
-     log_file_local.close()
     
-     #now we have results. Making .fits file (REQUIRES PYFIT)
+     ########################################################
+     #calculating atmospheric thickness (Michele Maris code)#
+     ########################################################
+     try:
+         logging.info("Starting atmospheric thickness code.")
+         tAtmo(localResultDir+fits_param_file, workDir, log_file_local)
+     except: 
+         logging.warning("It was impossible to run atmospheric thickness code.")
+         logging.info("It was impossible to run atmospheric thickness code.")
+
+     log_file_local.close()
+
+ 
+     #########################################################
+     #now we have results. Making .fits file (REQUIRES PYFIT)#
+     #########################################################
      logging.info("%d => %s", Parameter_set['number'], "Create FITS file from data")
      try:
          date = create_FITS(localResultDir+fortran_run_result,fits_out_base,localResultDir+fits_param_file)
@@ -149,19 +180,21 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      exitValue  = np.loadtxt(fortran_value_result_file)
      logging.info('ExitValue: %d', exitValue[25])
      # saving parameters for which we have SB/RG
-     if np.abs(exitValue[25] + 0.5) < 0.001 : #Runaway GreenHouse
+     if np.abs(exitValue[25] + 1.0) < 0.001 : #Runaway GreenHouse
          nSigmaCrit += 1
          SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['ecc'])
          SigmaCritParams[1] = np.append(SigmaCritParams[1],Parameter_set['obl'])
          SigmaCritParams[2] = np.append(SigmaCritParams[2],Parameter_set['dist'])
          SigmaCritParams[3] = np.append(SigmaCritParams[3],Parameter_set['p'])
-     elif np.abs(exitValue[25] + 1.0) < 0.001: #SnowBall
+     elif np.abs(exitValue[25] + 0.5) < 0.001: #SnowBall
          nTlim += 1
          TlimParams[0] = np.append(TlimParams[0],Parameter_set['ecc'])
          TlimParams[1] = np.append(TlimParams[1],Parameter_set['obl'])
          TlimParams[2] = np.append(TlimParams[2],Parameter_set['dist'])
          TlimParams[3] = np.append(TlimParams[3],Parameter_set['p'])
 
+
+         
      os.chdir(localWorkDir)
      logging.debug("%d => %s",Parameter_set['number'], os.getcwd())
      logging.debug("%d => %s",Parameter_set['number'], os.listdir("."))
@@ -184,7 +217,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
 
 def make_input_parameters(_data,parameters):
     '''
-        Convert input from rank 0 into set of parametes on rank i
+        Convert input from rank 0 into set of parametes
     '''
     input_params=np.fromstring(_data[1], dtype=float, sep=' ')
     parameters['gg']         = 0      #geography
@@ -227,6 +260,14 @@ if __name__ == '__main__':
                         filemode='w')
 
     if rank == 0:
+
+        # copying Michele stuff in working dir
+        copyall(template_dir+"/tAtmo/", workDir)
+        shutil.copytree(template_dir+"/tAtmo/atmosphereGeometry",workDir+"/atmosphereGeometry")
+        shutil.copytree(template_dir+"/tAtmo/atmosphereLib",workDir+"/atmosphereLib")
+        shutil.copytree(template_dir+"/tAtmo/pipeline_interface",workDir+"/pipeline_interface")
+
+        #beginning
         simulation_index = 0
         num_workers = size - 1
         closed_workers = 0
@@ -289,6 +330,9 @@ if __name__ == '__main__':
                 TlimParams[1] = np.append(TlimParams[1],data[3][1])
                 TlimParams[2] = np.append(TlimParams[2],data[3][2])
                 TlimParams[3] = np.append(TlimParams[3],data[3][3])
+
+
+        #
         ## END and close inputfile
         #
         infile.close()
@@ -304,30 +348,34 @@ if __name__ == '__main__':
                 tag = status.Get_tag()
                 logging.info("Receive simulation on worker %d from  0"  % (rank))
                 if tag == tags.START:
-                    logging.debug("%d,0: begin computation number" % (rank,local_simulation_index))
+                    logging.debug("%d,0: begin computation" % (rank))
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
-                    # execute esoclimi
+                    # running the code:
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
+
+                    # sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
-                    comm.send(None, dest=0, tag=tags.EXIT) # close task mpi e exit (this should not happen here!!!)
+                    comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
             else:
                 local_simulation_index += 1
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
                 if tag == tags.START:
-                    logging.debug("%d,0: begin computation number" % (rank,local_simulation_index))
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
-                    # execute esoclimi
+
+                    ####################
+                    # running the code:#
+                    ####################
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
+
+                    #sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
                         break
         non_converging_data = [nSigmaCrit,nTlim,SigmaCritParams,TlimParams]
         comm.send(non_converging_data, dest=0, tag=tags.EXIT)
-#
-# FINAL  on RANK 0 (collect data for non converging models)
-    comm.Barrier()
+
     if rank == 0:
         print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
         print '\n\n\n'
