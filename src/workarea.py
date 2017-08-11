@@ -7,13 +7,14 @@
 #  Copyright 2017 Guliano Taffoni. All rights reserved.
 
 
-'''
-    copyall(src,dest) 
-    
-        copy all files from source to destination one by one
-    
-'''
+
 def copyall (src, dest):
+    '''
+        copyall(src,dest)
+        
+        copy all files from source to destination one by one
+        
+    '''
     import os
     import shutil
     src_files = os.listdir(src)
@@ -23,14 +24,14 @@ def copyall (src, dest):
             shutil.copy(full_file_name, dest)
     return
 
-'''
-   collective_move (src, dest)
-   
-        move all files from src directory  to dest directory
-        one by one
-'''
 
 def collective_move (src, dest):
+    '''
+        collective_move (src, dest)
+        
+        move all files from src directory  to dest directory
+        one by one
+    '''
     import os
     import shutil
     src_files = os.listdir(src)
@@ -43,17 +44,18 @@ def collective_move (src, dest):
 
 
 
-'''
-    archive_results(str,src,Risultati)
-    
-        archive results from run directories
 
+def archive_results(str, src, planet, Risultati):
+    '''
+        archive_results(str,src,Risultati)
+        
+        archive results from run directories
+        
         str   =  multiple results directory
         src  =  directory where PRESSUREScurr.py and parEBM.h are located
         Risultati = results dir
-
-'''
-def archive_results(str, src, planet, Risultati):
+        
+    '''
     import os
     import shutil
     shutil.copy(src+"/parEBM.h",Risultati)
@@ -63,24 +65,25 @@ def archive_results(str, src, planet, Risultati):
     return
 
 
-'''
-    archive_logs(src,logs)
-    
-        archive logs collected during execution
 
-
-'''
 def archive_logs(str,log):
+    '''
+        archive_logs(src,logs)
+        
+        archive logs collected during execution
+        
+    '''
     import shutil
     shutil.move(log,str)
 
-'''
-    CleanAllPartialResults(localDir)
-    
+
+def CleanAllPartialResults(localDir):
+    '''
+        CleanAllPartialResults(localDir)
+        
         remove all data from temporary running directories before
         a new run is executed
-'''
-def CleanAllPartialResults(localDir):
+    '''
     import shutil
     shutil.rmtree(localDir)
     return

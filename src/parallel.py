@@ -38,6 +38,7 @@ from thumblib import create_THUMBNAILS
 from workarea import *
 from runEBM import *
 from tAtmo import *
+from time import  time
 import numpy as np
 
 def enum(*sequential, **named):
@@ -49,17 +50,13 @@ def enum(*sequential, **named):
 
 
 
-Pressures=[0.01, 0.1, 0.5, 1.0, 3.0, 5.0]
-Radii= [0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
-Obliquities = [0., 15., 23.43929, 30., 45.]
-Eccentricities = [ 0.0, 0.01671022, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]
 
 Parameter_set = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 
 # Directories and Files
 #template_dir="/home/LAVORO/Programming/Esoclimi/Devel/Templates/"
 #template_dir="/home/murante/data/EsoClimi/ProvaMpiPiuMichele/Templates/"
-template_dir="/beegfs/gmurante/Esoclimi/MPItest3/Templates/"
+template_dir="/home/esoclimi/Devel/Templates/"
 workDir = os.getcwd()
  
 RisultatiMultipli = "RisultatiMultipli"
@@ -120,7 +117,6 @@ def make_work_area (_dir):
 
 def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      import numpy as np
-
      localWorkDir    = "%s/%d/" % (workDir,Parameter_set['number'])
      localSrcDir     = "%s%s/" % (localWorkDir,Src)
      localResultDir = "%s%s/" % (localSrcDir,Risultati)
@@ -154,11 +150,10 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
      #calculating atmospheric thickness (Michele Maris code)#
      ########################################################
      try:
-         logging.info("Starting atmospheric thickness code.")
-         tAtmo(localResultDir+fits_param_file, workDir, log_file_local)
-     except: 
-         logging.warning("It was impossible to run atmospheric thickness code.")
-         logging.info("It was impossible to run atmospheric thickness code.")
+        logging.info("Starting atmospheric thickness code.")
+        tAtmo(localResultDir+fits_param_file, workDir, log_file_local)
+     except:
+        logging.warning("It was impossible to run atmospheric thickness code.")
 
      log_file_local.close()
 
@@ -232,6 +227,26 @@ def make_input_parameters(_data,parameters):
     parameters['number'] = _data[0]
     return(parameters)
 
+def write_restart_file(finput,fcomputed,frestart):
+    '''
+        write a restart file every X minutes
+        
+        file1 = input data
+        file2 = executed data
+        file3 = restart data
+        '''
+    import difflib
+    shutil.copyfile(frestart,frestart+".bak")
+    file1=open(finput)
+    file2=open(fcomputed)
+    file3=open(frestart,"w")
+    diff = difflib.ndiff(file1.readlines(), file2.readlines())
+    delta = ''.join(x[2:] for x in diff if x.startswith('- '))
+    file3.write(delta)
+    file3.close()
+    return
+
+
 if __name__ == '__main__':
     
     tags = enum('READY', 'DONE', 'EXIT', 'START')
@@ -243,6 +258,8 @@ if __name__ == '__main__':
     # number of non-converged runs
     nSigmaCrit = 0
     nTlim = 0
+    restart_interval = 300 # in seconds
+    oldtime = time()
     #parameter values for non-converged runs
     SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
@@ -262,11 +279,7 @@ if __name__ == '__main__':
     if rank == 0:
 
         # copying Michele stuff in working dir
-        copyall(template_dir+"/tAtmo/", workDir)
-        shutil.copytree(template_dir+"/tAtmo/atmosphereGeometry",workDir+"/atmosphereGeometry")
-        shutil.copytree(template_dir+"/tAtmo/atmosphereLib",workDir+"/atmosphereLib")
-        shutil.copytree(template_dir+"/tAtmo/pipeline_interface",workDir+"/pipeline_interface")
-
+        shutil.copy(template_dir+"/tAtmo/"+"tAtmo_rc",workDir)
         #beginning
         simulation_index = 0
         num_workers = size - 1
@@ -276,9 +289,26 @@ if __name__ == '__main__':
             myfile.write("# p, ecc, obl, dist\n")
         logging.info("Master starting with %d workers" % num_workers)
         print ("Master starting with %d workers" % num_workers)
+
         input_filename=workDir+"/input.txt"
+        restart_file=workDir+"/restart.dat"
+        running_input=workDir+'/input.%s.dat' % os.getpid()
+
         try:
-            infile = open(input_filename,"r")
+            fd = os.open(restart_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except OSError, e:
+            if e.errno == 17:
+                logging.info("%s" % e)
+                shutil.copy(restart_file,running_input)
+            else:
+                raise
+        else:
+            shutil.copy(input_filename,running_input)
+            shutil.copy(input_filename,restart_file)
+
+
+        try:
+            infile = open(running_input,"r")
         except IOError:
             print "Cannont open Input File"
             exit() ##### verify if it exists a proper way to close MPI
@@ -298,6 +328,10 @@ if __name__ == '__main__':
                 logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 simulation_index += 1
+                if time() - oldtime > restart_interval:
+                    logging.info("Write restart file ")
+                    write_restart_file(input_filename,computed_models_file,restart_file)
+                    oldtime = time()
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
                 logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
@@ -350,7 +384,9 @@ if __name__ == '__main__':
                 if tag == tags.START:
                     logging.debug("%d,0: begin computation" % (rank))
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
-                    # running the code:
+                    ####################
+                    # running the code:#
+                    ####################
                     nSigmaCrit,nTlim,SigmaCritParams,TlimParams=esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
 
                     # sending back results:
@@ -363,7 +399,6 @@ if __name__ == '__main__':
                 tag = status.Get_tag()
                 if tag == tags.START:
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
-
                     ####################
                     # running the code:#
                     ####################
