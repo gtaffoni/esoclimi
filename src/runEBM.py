@@ -189,8 +189,12 @@ def setupEBM(parameters,_dir):
         # search index of pressure columns to be interpolated
         for ip in range(Np-1):
            if pOLR[ip] <= pressP/1.e5 <= pOLR[ip+1]:
-        	 ip0=ip 
-        
+        	 ip0=ip
+        try:
+            ip0
+        except NameError:
+            ip0err="Press=%5.3f Ecc=%4.2f Dist=%3.1f Obl=%5.3f CO2=%5.3f GG=%d"%(parameters['p'],parameters['ecc'],parameters['dist'],parameters['obl'],parameters['p_CO2_P'],parameters['gg'])
+            print ("Error in ip0  %s" % ip0err )
         x0=pressP/1.e5
         xi=pOLR[ip0]
         xp=pOLR[ip0+1]
