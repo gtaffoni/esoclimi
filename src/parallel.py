@@ -188,8 +188,6 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams):
          TlimParams[2] = np.append(TlimParams[2],Parameter_set['dist'])
          TlimParams[3] = np.append(TlimParams[3],Parameter_set['p'])
 
-
-         
      os.chdir(localWorkDir)
      logging.debug("%d => %s",Parameter_set['number'], os.getcwd())
      logging.debug("%d => %s",Parameter_set['number'], os.listdir("."))
