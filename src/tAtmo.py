@@ -35,6 +35,7 @@ def tAtmo(exop_par_file_name, workdir, logfile):
    import sys
    import os
    import time
+   import shutil
    import numpy as np
    from matplotlib import pyplot as plt
    
@@ -136,8 +137,8 @@ def tAtmo(exop_par_file_name, workdir, logfile):
 #      print "Warning: impossible to create directory '%s', may be it is already present"%outPfx
 #      print
 #
-   os.system('cp -rauvp %s %s'%(exop_par_file_name,oparBackupName))
-  
+#   os.system('cp -rauvp %s %s'%(exop_par_file_name,oparBackupName))
+   shutil.copy(exop_par_file_name,oparBackupName)
    # creates csv file
    logfile.write( "Writing %s\n"%ofileName)
 

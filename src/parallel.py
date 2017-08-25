@@ -244,20 +244,67 @@ def write_restart_file(finput,fcomputed,frestart):
     file3.close()
     return
 
+def write_non_conferged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams)
+    '''
+    
+    Write on files the number and type of non converged models and the corresponding paramters
+    
+    '''
+    print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
+    print '\n\n\n'
+    print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
+    print 'Fractions: ', 1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index
+    print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index
+    print '\n Total number of runs: ',simulation_index
+        
+        #recording these on a file!
+    f=open('NonConverged.dat','w')
+    f.write('nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): %d %d \n' % (nSigmaCrit,  nTlim) )
+    f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index) )
+    f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index))
+    f.write('Total number of runs: %d\n' % simulation_index)
+    f.close()
+    
+    with open('SnowBall-Params.dat','w') as f:
+        for l in np.matrix(TlimParams).T:
+            np.savetxt(f,l,'%e ')
+    
+    with open('RunawayGreenhouse-Params.dat','w') as f:
+        for l in np.matrix(SigmaCritParams).T:
+            np.savetxt(f,l,'%e ')
+    return
+
+
+def collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,data)
+    '''
+        Collect and summ up all the non converged models data
+        '''
+    nSigmaCrit = nSigmaCrit + data[0]
+    nTlim = nTlim + data[1]
+    SigmaCritParams[0] = np.append(SigmaCritParams[0],data[2][0])
+    SigmaCritParams[1] = np.append(SigmaCritParams[1],data[2][1])
+    SigmaCritParams[2] = np.append(SigmaCritParams[2],data[2][2])
+    SigmaCritParams[3] = np.append(SigmaCritParams[3],data[2][3])
+    TlimParams[0] = np.append(TlimParams[0],data[3][0])
+    TlimParams[1] = np.append(TlimParams[1],data[3][1])
+    TlimParams[2] = np.append(TlimParams[2],data[3][2])
+    TlimParams[3] = np.append(TlimParams[3],data[3][3])
+    return(nSigmaCrit,nTlim,SigmaCritParams,TlimParams)
 
 if __name__ == '__main__':
     
-    tags = enum('READY', 'DONE', 'EXIT', 'START')
+    tags = enum('READY', 'DONE', 'EXIT', 'START','PARAM')
     comm = MPI.COMM_WORLD # Communicator
     size = comm.size      # Number of processes
     rank = comm.rank      # this process
     status = MPI.Status()
+    if size < 2:
+        print "ERROR: not enough workers!"
+        exit(0)
     #
     # number of non-converged runs
     nSigmaCrit = 0
     nTlim = 0
-    restart_interval = 300 # in seconds
-    oldtime = time()
     #parameter values for non-converged runs
     SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
@@ -279,6 +326,10 @@ if __name__ == '__main__':
         # copying Michele stuff in working dir
         shutil.copy(template_dir+"/tAtmo/"+"tAtmo_rc",workDir)
         #beginning
+        restart_interval = 300 # in seconds
+        stop_time = 3600 #in seconds
+        starttime= time()
+        oldtime = starttime
         simulation_index = 0
         num_workers = size - 1
         closed_workers = 0
@@ -287,7 +338,7 @@ if __name__ == '__main__':
             myfile.write("# p, ecc, obl, dist\n")
         logging.info("Master starting with %d workers" % num_workers)
         print ("Master starting with %d workers" % num_workers)
-
+        stop_file=workDir+"/stop"
         input_filename=workDir+"/input.txt"
         restart_file=workDir+"/restart.dat"
         running_input=workDir+'/input.%s.dat' % os.getpid()
@@ -325,11 +376,15 @@ if __name__ == '__main__':
                         myfile.write(results)
                 logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
-                simulation_index += 1
                 if time() - oldtime > restart_interval:
                     logging.info("Write restart file ")
                     write_restart_file(input_filename,computed_models_file,restart_file)
                     oldtime = time()
+                if os.path.isfile(stop_file):
+                    break
+                if time() - starttime > stop_time:
+                    break
+                simulation_index += 1
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
                 logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
@@ -352,17 +407,8 @@ if __name__ == '__main__':
             elif tag == tags.EXIT: # Collect extit reply from workers
                 logging.info("EXIT: Worker %d exited." % source)
                 closed_workers+=1
-                nSigmaCrit = nSigmaCrit + data[0]
-                nTlim = nTlim + data[1]
-                SigmaCritParams[0] = np.append(SigmaCritParams[0],data[2][0])
-                SigmaCritParams[1] = np.append(SigmaCritParams[1],data[2][1])
-                SigmaCritParams[2] = np.append(SigmaCritParams[2],data[2][2])
-                SigmaCritParams[3] = np.append(SigmaCritParams[3],data[2][3])
-                TlimParams[0] = np.append(TlimParams[0],data[3][0])
-                TlimParams[1] = np.append(TlimParams[1],data[3][1])
-                TlimParams[2] = np.append(TlimParams[2],data[3][2])
-                TlimParams[3] = np.append(TlimParams[3],data[3][3])
-
+                nSigmaCrit,nTlim,SigmaCritParams,TlimParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,data)
+                
 
         #
         ## END and close inputfile
@@ -405,33 +451,13 @@ if __name__ == '__main__':
                     #sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
+                        comm.send(None, dest=0, tag=tags.EXIT)
                         break
         non_converging_data = [nSigmaCrit,nTlim,SigmaCritParams,TlimParams]
         comm.send(non_converging_data, dest=0, tag=tags.EXIT)
 
     if rank == 0:
-        print 'nSigmaCrit, nTlim: ', nSigmaCrit,  nTlim
-        print '\n\n\n'
-        print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): ', nSigmaCrit,  nTlim
-        print 'Fractions: ', 1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index
-        print '\n Overall number and fraction of non-converged inhabitable cases: ', nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index
-        print '\n Total number of runs: ',simulation_index
-
-        #recording these on a file!
-        f=open('NonConverged.dat','w')
-        f.write('nSigmaCrit (Runaway Greenhouse), nTlim (Snowball): %d %d \n' % (nSigmaCrit,  nTlim) )
-        f.write('Fractions: %e %e\n' % (1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index) )
-        f.write('Overall number and fraction of non-converged inhabitable cases: %d %e \n' %(nSigmaCrit+nTlim, 1.0*(nSigmaCrit+nTlim) / simulation_index))
-        f.write('Total number of runs: %d\n' % simulation_index)
-        f.close()
-    
-        with open('SnowBall-Params.dat','w') as f:
-            for l in np.matrix(TlimParams).T:
-                np.savetxt(f,l,'%e ')
-
-        with open('RunawayGreenhouse-Params.dat','w') as f:
-            for l in np.matrix(SigmaCritParams).T:
-                np.savetxt(f,l,'%e ')
+        write_non_conferged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams)
 
 
 

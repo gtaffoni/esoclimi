@@ -39,7 +39,7 @@ def create_FITS(in_file,out_file,param_file):
         if line:
             words = line.split('!')
             if words[0] == "COMMENT":
-                prihdr['COMMENT'] = (words[2][:79] + '..') if len(words[2]) > 79 else words[2]
+                prihdr['COMMENT'] = (words[2][:75] + '..') if len(words[2]) > 79 else words[2]
             else:
                 if words[3]=="F":
                     prihdr[words[0]]  = (float(words[1]),words[2])
