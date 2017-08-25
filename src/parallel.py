@@ -244,7 +244,7 @@ def write_restart_file(finput,fcomputed,frestart):
     file3.close()
     return
 
-def write_non_conferged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams)
+def write_non_conferged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams):
     '''
     
     Write on files the number and type of non converged models and the corresponding paramters
@@ -275,7 +275,7 @@ def write_non_conferged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams
     return
 
 
-def collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,data)
+def collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,data):
     '''
         Collect and summ up all the non converged models data
         '''
