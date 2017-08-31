@@ -12,7 +12,7 @@
         include 'vegetation.h'
 
         real*8 time, fi1,fi2,dfi
-        real*8 grow
+        real*8 grow,death
         real*8 T(N),dT(N),flux(N)
         real*8 V(N), dV(N),fluxV(N)
         real*8 der(0:N),xk(0:N)
@@ -109,9 +109,9 @@
               fluxV(i)=(xk(i)*derV(i)-xk(i-1)*derV(i-1))/dx/
      >             dcos(x(i))
 * GM WARNING, ADDING THIS FOR THE REASONS DISCUSSED IN EMAILS (vegetated Antartide)
-              if( grow(Tmed).le.0.0) then
-                 fluxV(i)=0.0
-              endif
+*              if( grow(Tmed).le.0.0) then
+*                 fluxV(i)=0.0
+*              endif
            end do
            fluxV(N)=-xk(N-1)*derV(N-1)/dx/dcos(x(N))
         else
@@ -121,16 +121,16 @@
               xk(i)=Dterm(time,x(i),Tmed,Ddry)*(1-(x(i)+dx/2)**2)
               fluxV(i)=(xk(i)*derV(i)-xk(i-1)*derV(i-1))/dx
 * GM WARNING, ADDING THIS FOR THE REASONS DISCUSSED IN EMAILS (vegetated Antartide)
-              if( grow(Tmed).le.0.0) then
-                 fluxV(i)=0.0
-              endif
+*              if( grow(Tmed).le.0.0) then
+*                 fluxV(i)=0.0
+*              endif
            end do
            fluxV(N)=-xk(N-1)*derV(N-1)/dx
         endif
        
         do i=1,N
            dV(i)=seedfall*fluxV(i)/Cterm(T(i),time,i,fo)+
-     >      grow(T(i))*V(i)*(1-V(i))-dead*V(i)
+     >      grow(T(i))*V(i)*(1-V(i))-death(T(i))*V(i)
         enddo
 
         return
