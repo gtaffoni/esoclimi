@@ -50,8 +50,8 @@ p_CO2_P=gh*p_CO2_E       # planet CO2 partial pressure [bar]
 p_CH4_P=gh*p_CH4_E       # planet CH4 partial pressure [bar]
 
 if OLRmodel=='ccm3tab0':  
-   tabOLRfile='CCMM_RH60/OLR_g16_rh60_co380_ch1.8.txt' 
-tabTOAalbfile='CCMM_RH60/ALB_g16_rh60_co380_ch1.8.txt'
+   tabOLRfile='CCM_RH60/OLR_g16_rh60_co380_ch1.8.txt' 
+tabTOAalbfile='CCM_RH60/ALB_g16_rh60_co380_ch1.8.txt'
 
 #ALB_g16_rh60_co2_5ppmv_ch0.txt
 #ALB_g16_rh60_co2_10ppmv_ch1.8.txt
