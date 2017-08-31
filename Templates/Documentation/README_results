@@ -1,0 +1,226 @@
+
+After the climate simulation is done, the results are stored 
+in the following files in the directory “Risultati”.
+
+*************************************************************
+File: GlobalData.txt
+# mean global quantities averaged over one orbit
+—————————————————————————————————
+Structure: 
+first line: legenda  
+second line: space separated data
+1: planet name
+2: mean global surface temperature [K]
+3: mean global Top-of-atmosphere albedo
+4: mean global OLR [W/m2]
+5: mean global Absorbed Stellar Radiation
+6: mean global cloud cover
+7: mean global ice cover
+8: Liquid water habitability index, h_lw
+9: “Complex Life” habitability index, h_050
+10: mean orbital Equator-pole temperature difference [K]
+11: Minimum surface temperature [K]
+12: Maximum surface temperature [K]
+13: Temperature latitude gradient
+14: Humidity temperature gradient
+*************************************************************
+
+
+*************************************************************
+File: ZonalData.txt
+# mean zonal quantities averaged over one orbit
+# READ BY SCRIPT rmsMonths.py
+—————————————————————————————————
+Structure: a line for each latitude zone; space separated data
+1: latitude [deg]
+2: mean zonal orbital temperature [K]
+3: mean zonal habitability (liquid water index)
+4: mean zonal OLR [W/m2]
+5: mean zonal ASR [W/m2]
+6: mean zonal TOA alb 
+7: mean zonal ice cover
+8: mean zonal horizontal atmospheric flux
+9: mean zonal horizontal atmospheric flux (dry)
+*************************************************************
+
+
+*************************************************************
+File: ZonalTemp XXX .txt
+# mean zonal instantaneous temperature at season “is” out of “Ns” seasons
+# XXX = is * 360 / Ns  
+—————————————————————————————————
+Structure: a line for each latitude zone; two columns
+col1: latitude [deg]
+col2: mean zonal instantaneous temperature [K]
+*************************************************************
+
+
+*************************************************************
+File: year_lat_alb.tla
+# TOA albedo at each zone and each season
+# data for the last orbit after convergence
+# READ BY SCRIPT mapAlbedo.py
+—————————————————————————————————
+Structure: 
+first line: Ns (number of seasons)  N (number of zones)
+following lines:  4 columns
+col1: time [number of the last orbit and fraction of the orbit]
+col2: latitude [deg]
+col3: Top-of-atmosphere albedo [K]
+col4: ice cover
+************************************************************* 
+
+
+*************************************************************
+File: year_lat_temp_last1.tlt
+# surface temperature at each zone and each season
+# data for the last orbit after convergence
+# READ BY SCRIPT mapTemperature.py
+—————————————————————————————————
+Structure: 
+first line: Ns (number of seasons)  N (number of zones)
+following lines: 3 columns (time-latitude-temperature)
+col1: time [number of the last orbit and fraction of the orbit]
+col2: latitude [deg]
+col3: temperature [K]
+************************************************************* 
+
+
+*************************************************************
+File: year_lat_temp_last5.tlt
+# surface temperature at each zone and each season
+# data for the last five orbits after convergence
+—————————————————————————————————
+Structure: 
+first line: Ns (number of seasons)  N (number of zones)
+following lines: three columns (time-latitude-temperature)
+col1: time [number of the last orbit and fraction of the orbit]
+col2: latitude [deg]
+col3: temperature [K]
+************************************************************* 
+
+
+*************************************************************
+File: year_farea.ebm
+# fraction of habitable surface of the planet at different seasons
+# calculated for the last orbit  
+—————————————————————————————————
+Structure: a line for each season; two columns
+col1: time [number of the last orbit and fraction of the orbit]
+col2: fraction of habitable surface (liquid water criterion)
+*************************************************************
+
+
+*************************************************************
+File: valori.txt
+# summary of input and ouput data of the simulation
+—————————————————————————————————
+Structure: single line, space separated data
+1: Mstar (stellar mass, kg)
+2: LumStar (stellar luminosity, W)
+3: smaP (semimajor axis, AU)
+4: eccP (eccentricity)
+5: omegaPERI (omega pericenter)
+6: obliq (axis obliquity, deg)
+7: Prot (rotation period)
+8: fom (mean ocean fraction)
+9: pressP (total surface pressure, Pa)
+10: q0 (mean insolation, W/m2)
+11: Porb/86400 (orbital period, days)
+12: annualglobalT (mean global orbital temperature, K)
+13: DelT_EP (equator-pole temperature difference, K)
+14: fhab (habitability index, liquid water criterion)
+15: chab (continuous habitability, liquid water criterion)
+16: nhab (non-habitable fraction, liquid water criterion)
+17: annualglobalA (mean global orbital albedo at top-of-atmosphere)
+18: number of last orbit of the simulation
+19: Tmin (min temperature over all latitudes and seasons)
+20: Tmax (max temperature over all latitudes and seasons)
+21: asl (surface albedo of continents)
+22: Rpar (parameter used to model the latitudinal diffusion)
+23: TotOLR (mean global OLR, W/m2)
+24: sigmaRG (fraction of surface continuously above Runaway Greenhouse limit)
+25: sigmaBoil (fraction of surface continuously above water boiling point)
+26: exitFlag (1:convergence,-0.5:Tmax<Tlim1,-1:RG,-100:"stepsize too small"
+*************************************************************
+
+
+
+*************************************************************
+File: longOrb_temp.ebm
+# stellar longitude and mean global seasonal temperature
+# data FOR ONLY THE LAST ORBIT after convergence
+# WARNING: stellar longitude is correct only for circular orbits  
+—————————————————————————————————
+Structure: two columns  
+col1: stellar longitude [deg]
+col2: mean global seasonal temperature [K]
+************************************************************* 
+
+ 
+
+The following files could be eliminated in future versions
+
+
+*************************************************************
+File: year_lat_temp.tlt
+# surface temperature at each zone and each season
+# data FOR ALL THE ORBITS (also before convergence)
+—————————————————————————————————
+Structure: 
+first line: Ns (number of seasons)  N (number of zones)
+following lines: three columns (time-latitude-temperature)
+col1: time [number of the last orbit and fraction of the orbit]
+col2: latitude [deg]
+col3: temperature [K]
+************************************************************* 
+
+
+*************************************************************
+File: Sterm_latXXX.tlt
+# seasonal evolution of insolation at latitude XXX
+# NOT WORKING PROPERLY FOR ALL LATITUDES
+# data FOR THE FIRST ORBIT 
+—————————————————————————————————
+Structure: 2 columns
+col1: time [fraction of the orbit]
+col2: insolation [W/m2] 
+************************************************************* 
+
+
+************************************************************* 
+File: init.dat
+# zonal data used at the start of the simulation
+————————————————————————————————— 
+Structure: 3 columns
+col1: xmin+(i-1)*dx+dx/2 
+col2: initial temperature
+col3: ocean fraction
+************************************************************* 
+
+
+************************************************************* 
+File: warnings.txt
+# apparently not used CHECK 
+————————————————————————————————— 
+************************************************************* 
+
+
+************************************************************* 
+File: cloudalbedo.txt
+# currently empty because commented in the code
+# test seasonal evolution of  mean diurnal cloud albedo  
+————————————————————————————————— 
+************************************************************* 
+
+
+*************************************************************
+File: label.txt
+# used to create a label for the simulation
+—————————————————————————————————
+Structure: space separated data
+1: semimajor axis
+2: eccentricity
+3: habitability index, h_lw
+4: continuous habitability index
+*************************************************************

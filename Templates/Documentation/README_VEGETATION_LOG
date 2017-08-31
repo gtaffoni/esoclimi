@@ -1,0 +1,34 @@
+   August 31st, Pisa, work with Antonello Provenzale
+
+- validated and modified module VegPassive
+
+   we need LOW value of seed (0.01). The D term is very strong
+    
+   introduced a function death(T): plants death is now function of the temperature,
+   the parameter dTdead determines the plant tolerance thermal limit
+   all files changed accordingly, including integrate.f (in the module)
+
+   WE WILL NEED TO IMPLEMENT A NEW CONVERGENCY CRITERION ON VEGETATION
+
+   We need to evaluate the idea of introducing an altitude correction (for
+   Antarctica, but not only). Can be made dynamical (enters in EBM equation)
+   In this case, Earth validation should be re-done
+
+- corrected VegAlbedoFB module
+
+   there was a mistake in module_albedo_surf.f
+
+   now veg fb is positive (decreases albedo increases temperature).
+   we should consider the idea of exploring a negative albedo (putting clouds
+   where the vegetation is)
+
+   introduced new Dune planet, tested by Antonello, and we verified that the
+   (positive) vegetation feedback is in action
+
+   consider the possibility of a careful parameter exploration
+
+   CARBON FEEDBACK!!!
+
+-TBD: modify scripts run.bash and run_dune.bash so that tey also work with the current
+      directory structure
+
