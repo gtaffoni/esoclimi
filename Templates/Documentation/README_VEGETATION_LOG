@@ -1,5 +1,7 @@
    August 31st, Pisa, work with Antonello Provenzale
 
+   Equations of the model in vegetation.pdf
+
 - validated and modified module VegPassive
 
    we need LOW value of seed (0.01). The D term is very strong
@@ -29,6 +31,4 @@
 
    CARBON FEEDBACK!!!
 
--TBD: modify scripts run.bash and run_dune.bash so that tey also work with the current
-      directory structure
-
+   CONSIDER THE POSSIBILITY TO MAKE A DAISY WORLD

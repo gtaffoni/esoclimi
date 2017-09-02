@@ -14,7 +14,7 @@ AAAAAAAAAAAAA WARNING dir structure changed here!!
 
  They are:
    1. module (0=Std, 1=Vegetation passive, 2=Vegetation albedo feedback)
-   2. planet (currently only 0=EARTH
+   2. planet (currently 0=EARTH, 1=K452b, 2=Dune)
    3. [NEW] number of simulation - sequential number of the simulation in t
       in the current day
    4. [NEW] code version (currently 1.1.02)
@@ -28,9 +28,9 @@ These addictional parameters are used to build the file "esopianeti.par", that i
 employed to produce a .fits file for our databese (under construction).
 
 So, you can give:
- ./run.bash 0 0 
- ./run.bash 2 0 1 1.1.02
- ./run.bash [ENTER]
+ ./run_dune.bash 0 0 
+ ./run_dune.bash 2 0 1 1.1.02
+ ./run_dune.bash [ENTER]
  [this will ask you the choices from keyboard; YOU CAN SKIP THE LAST TWO, that is 
  equivalent to the command line ./run.bash n m (where n,m are the input you gave
  from keyboard)]
@@ -56,7 +56,7 @@ The effect is:
 
 once finished, run.bash MOVES the directory Risultati to the main directory.
 If an old Risultati exists, it is moved to Risultati.bak
-
+The same for Src.
 
 Note that at the end of the process the directory Src is NOT cleared. The desired version 
 of the code is there, with its source files and header file. You can work there as you wish 
@@ -86,9 +86,12 @@ multipressure.py (makes 3 runs with 0.5, 1.0, 1.5 times the Earth pressure -
                   everything else unchanged from Earth)
 multiveg.py      (makes 3 run with albefo FB on, vegetation albedo 0.15, 0.13, 0.1
                   everything else unchanged from Earth)
+They can be find in Templates/Documentation and THEY HAVE NOT BEEN TESTED AGAINST THE CURRENT VERSION
+I expect that they would need some changes, but the current version has the parallel driver that
+should be preferred.
 
-They are intended to show how to build a python script for running many times the code,
-changing one parameter, automatically.
+In the previous one, they were intended to show how to build a python script for running
+many times the code, changing one parameter, automatically.
 
 In the first case, EARTH.py is copied in PRESSURE.py. The script parses is,
 produces one PRESSUREcurr.py with the correct pressure, that is used by runEBM.py
@@ -157,22 +160,26 @@ in the used files.
    *************** by-hand execution  ***********************
 
    from the main dir (in this case you will use the standard parEBM.h, defined for EARTH):
-   
-        cp Std/* Src
-	cp ModulesDef/* Src
+
+       cp Templates/ModulesDef/* Src
+       cp Templates/Std/* Src
+       cp Templates/Std/startpar_standalone.h Src/startpar.h
+       cp src/runEBM_standalone.py Src/runEBM.py
+       cp src/libraryEBM.py Src
+       cp src/constantsEBM.py Src
 
 
   if you want VegPassive OR VegAlbedoFB:
   
-        cp VegPassive/* Src
-        cp VegPassive/Modules/* Src
+        cp Templates/VegPassive/* Src
+        cp Templates/VegPassive/Modules/* Src
 
   if you want VegAlbedoFB:
 
-        cp VegAlbedoFB/* Src
-        cp VegAlbedoFB/Modules/* Src
+        cp Templates/VegAlbedoFB/* Src
+        cp Templates/VegAlbedoFB/Modules/* Src
 
-  cd Src
+    cd Src
   mkdir Risultati
   make clean
   make
