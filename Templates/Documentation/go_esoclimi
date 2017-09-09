@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#PBS -S /bin/bash
+#PBS -N esoclimi
+#PBS -l walltime=1:50:00
+#PBS -l nodes=1:ppn=4
+#PBS -A esoclimi
+
+module load openmpi/2.0.1/gnu/4.9.4
+cd  /beegfs/exanest01/Gius/Esoclimi/MPItestFINAL/
+
+virtualenv local-python
+source local-python/bin/activate
+
+cp src/parallel.py .
+cp src/coderoot.py .
+
+echo $PATH
+echo $WORKINGDIR
+
+`which mpirun` -np 4 python parallel.py
+

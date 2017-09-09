@@ -37,12 +37,12 @@ OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF']
 		      # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
 
 if OLRmodel=='ccm3tab0':  
-   tabOLRfile='CCM_RH60/OLR_g1_rh60_co2x0.1.txt' 
-   tabTOAalbfile='CCM_RH60/ALB_g1_rh60_co2x0.1.txt'
+   tabOLRfile='CCM_RH60/OLR_g1_rh60_co380_ch1.8.txt' 
+   tabTOAalbfile='CCM_RH60/ALB_g1_rh60_co380_ch1.8.txt'
  
 ff=1.0
 pressP=ff*pressEdry      # total dry pressure of the planet (N2/O2 atmosphere, greenhouse gases included, water excluded)
-p_CO2_P=p_CO2_E*0.1       # planet CO2 partial pressure [bar]
+p_CO2_P=p_CO2_E       # planet CO2 partial pressure [bar]
 p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
 
 cp_P,molwtP=AtmPar(pressP,p_CO2_P,p_CH4_P)

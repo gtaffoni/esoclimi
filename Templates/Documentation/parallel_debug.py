@@ -22,7 +22,7 @@
     
     WARNING, 0.001 e 0.005 of pressure are not working
     Pressures are epressed in times the Earth value
- 
+
 
 '''
 
@@ -40,7 +40,6 @@ import coderoot as cd
 code_root_dir=cd.coderoot()
 template_dir=code_root_dir+"Templates/"
 src_dir=code_root_dir+"src/"
-cd.copyfiles(src_dir, template_dir)
 ###############################################################################
 # qui potremmo mettere la copia di tutti i files ed evitare la shell bash
 
@@ -148,7 +147,10 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         exitValue=-2.
     else:
         exitValue=1
-        
+
+    print 'ESOCLIMI_EMULATE, random exit: ',exitValue
+    print  Parameter_set['p'], Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'] 
+
 
     if exitValue< -101.:
         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
@@ -354,6 +356,7 @@ def write_non_converged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams
     Write on files the number and type of non converged models and the corresponding paramters
     
     '''
+    print 'nSigmaCrit, nTlim, nPressExceeded, nIntegrationError: ', nSigmaCrit,  nTlim, nPressExceeded, nIntegrationError
     print '\n\n\n'
     print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball), nPressExceeded (out of range), nIntegrationError (stepsize too small): ', nSigmaCrit,  nTlim, nPressExceeded, nIntegrationError
     print 'Fractions: ', 1.0*nSigmaCrit/simulation_index, 1.0*nTlim/simulation_index, 1.0*nPressExceeded/simulation_index, 1.0*nIntegrationError/simulation_index
@@ -402,6 +405,30 @@ def collect_non_converged_models_data(nSigmaCrit, nTlim, SigmaCritParams, TlimPa
 #           IS VARIED
 #   WE *MUST* STUDY AUTOMATIC WAYS TO DO THESE KIND OF THINGS
 #
+
+    print '---- collect non converged models data'
+    print '---- data: '
+    print  data[0]
+    print data[1]
+    print data[2][0]
+    print data[2][1]
+    print data[2][2]
+    print data[2][3]
+    print data[3][0]
+    print data[3][1]
+    print data[3][2]
+    print data[3][3]
+    print data[4]
+    print data[5]
+    print data[6][0]
+    print data[6][1]
+    print data[6][2]
+    print data[6][3]
+    print data[7][0]
+    print data[7][1]
+    print data[7][2]
+    print data[7][3]
+    print '------'
     try:
      nSigmaCrit = nSigmaCrit + data[0]
      nTlim = nTlim + data[1]
@@ -449,8 +476,8 @@ def collect_non_converged_models_data(nSigmaCrit, nTlim, SigmaCritParams, TlimPa
 
 if __name__ == '__main__':
     
-    tags = enum('READY', 'DONE', 'EXIT', 'START','PARAM', 'NCD', 'NCDS', 'GO')
-    TAGS=('READY', 'DONE', 'EXIT', 'START','PARAM', 'NCD', 'NCDS', 'GO')
+    tags = enum('READY', 'DONE', 'EXIT', 'START','PARAM', 'NCD', 'SendNCD')
+    TAGS=('READY', 'DONE', 'EXIT', 'START','PARAM', 'NCD', 'SendNCD')
     comm = MPI.COMM_WORLD # Communicator
     size = comm.size      # Number of processes
     rank = comm.rank      # this process
@@ -460,7 +487,7 @@ if __name__ == '__main__':
         exit(0)
 
 
-    # non-converged run, general variables and lists
+    #
     # number of non-converged runs
     nSigmaCrit = 0
     nTlim = 0
@@ -487,7 +514,7 @@ if __name__ == '__main__':
                         filename=workDir+"/run_"+str(rank)+".log",
                         filemode='w')
 
-    if rank == 0:  ########## MASTER #################
+    if rank == 0:
         
 
         # copying Michele stuff in working dir
@@ -533,48 +560,33 @@ if __name__ == '__main__':
             print "Cannont open Input File"
             exit() ##### verify if it exists a proper way to close MPI
 
-# starting all workers
-        new_workers=num_workers
-        for i in range(1, num_workers+1):
+        for line in infile:
+            print '\n\n', line, '\n'
             data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
             tag = status.Get_tag()
-            if tag == tags.READY:
-                line = infile.readline()
-                if line == '': #more workers than input models
-                    new_workers=i-1
-                    break
+            print 'Task ', rank, ' received ', TAGS[tag], ' from ', source
+            if tag == tags.READY: # Only at first loop
+                comm.send([simulation_index,line], dest=source, tag=tags.START)
                 logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
-                comm.send([simulation_index,line], dest=i, tag=tags.START)
+                print 'Task ',rank,' sent START to ', source
                 simulation_index += 1
-            
-        #ready to go
-        for i in range(1,new_workers+1):
-            comm.send(None, dest=i, tag=tags.GO)
-
-        #firing workers in eccess
-        for i in range(new_workers+1,num_workers+1):
-            comm.send(None, dest=i, tag=tags.EXIT)
-            comm.send(None, dest=i, tag=tags.GO)
-            comm.recv(source=MPI.ANY_SOURCE, tag=tags.EXIT, status=status)
-        num_workers=new_workers
-
-#                MASTER managing SLAVES
-        while True:
-            data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
-            source = status.Get_source()
-            tag = status.Get_tag()
-
-            if tag == tags.DONE:
+            elif tag == tags.DONE:
                 results = data # collect results from worker
                 with open(computed_models_file, "a") as myfile:
                         myfile.write(results)
-                logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
-                comm.send(None, dest=source, tag=tags.NCDS)
-            elif tag == tags.NCD:
-                if data[8]<0.: #collecting non-converger data
+
+                data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)               
+                source = status.Get_source()
+                tag = status.Get_tag()
+            
+                print 'Data: ',data
+                print data[8]
+                print 'Task ', rank, ' received ', TAGS[tag], ' from ', source
+                if data[8]<0.:
+                    print 'collecting non converged data, task ',rank
                     nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams,data)
-#
+
                 if time() - oldtime > restart_interval:
                     logging.info("Write restart file ")
                     write_restart_file(input_filename,computed_models_file,restart_file)
@@ -583,17 +595,11 @@ if __name__ == '__main__':
                     break
                 if time() - starttime > stop_time:
                     break
-
-                line = infile.readline()
-                if line == '': #input models finished
-                    comm.send(None, dest=source, tag=tags.EXIT)
-                    break
-
                 simulation_index += 1
-                logging.info("tags.NCD Got data from worker %d: %s" % (source,results))
+                logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
+                
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
-                logging.info("tags.START Sending simulation %d to worker %d" % (simulation_index, source))
-
+                print 'Task ',rank,' sent START to ', source
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
                 logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
@@ -601,39 +607,48 @@ if __name__ == '__main__':
         #
         ## INPUT file completed. Collect running worker results end ask them to exit
         #
-
         while closed_workers < num_workers:
             data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
             tag = status.Get_tag()
+            print 'Task ', rank, 'received ', TAGS[tag], 'from ', source
 
             if tag == tags.READY: # Should not happen unless total simulations < numer_of_workers
                 comm.send(None, dest=source, tag=tags.EXIT)
+                print 'Task ', rank, ' sent EXIT to ', source
             elif tag == tags.DONE: # collect results from running workers and ask to exit
                 results = data
                 with open(computed_models_file, "a") as myfile:
                     myfile.write(results)
                 logging.info("EXIT: Got data from worker %d" % source)                
-                comm.send(None, dest=source, tag=tags.NCDS)
 
-            elif tag == tags.NCD:
+                data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)               
+                source = status.Get_source()
+                tag = status.Get_tag()
+            
+                print 'Data: ',data
+                print data[8]
+                print 'Task ', rank, ' received ', TAGS[tag], ' from ', source
 
                 if data[8]<0.:
+                    print 'collecting non converged data, task ',rank
                     nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams,data)
 
+
+
                 comm.send(None, dest=source, tag=tags.EXIT)
-
-
+                print 'Task ', rank, ' sent EXIT to ', source
             elif tag == tags.EXIT: # Collect exit reply from workers
                 logging.info("EXIT: Worker %d exited." % source)
                 closed_workers+=1
+
 
 
         #
         ## END and close inputfile
         #
         infile.close()
-    else: # working tasks ########## SLAVES #################
+    else: # working tasks
         name = MPI.Get_processor_name()
         logging.info("I am a worker with rank %d on %s." % (rank, name))
         local_simulation_index = 0
@@ -641,11 +656,11 @@ if __name__ == '__main__':
             if local_simulation_index == 0:
                 local_simulation_index += 1
                 comm.send(None, dest=0, tag=tags.READY)
+                print 'Task ', rank, 'sent READY to 0'
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
+                print 'Task ', rank, 'received ', TAGS[tag],' from 0'
                 logging.info("Receive simulation on worker %d from  0"  % (rank))
-                comm.recv(source=0, tag=tags.GO, status=status)  #wait for everybody to have started
-
                 if tag == tags.START:
                     logging.debug("%d,0: begin computation" % (rank))
                     # number of non-converged runs - local data
@@ -663,18 +678,20 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
-
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
                     # sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
-                elif tag == tags.NCDS:
+                    print 'Task ', rank, 'sent DONE to 0'
+
                     non_converging_data = [nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL,exitValueL]
                     comm.send(non_converging_data, dest=0, tag=tags.NCD)
+                    print 'Task ',rank, 'sent NCD to 0'
+
+
                 elif tag == tags.EXIT:
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
-                    break;
-            else: 
+            else:
                 local_simulation_index += 1
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
@@ -693,21 +710,27 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
                     #sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
-                elif tag == tags.NCDS:
+                    print 'Task ', rank, 'sent DONE to 0'
+#get ncd
 
                     non_converging_data = [nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL,exitValueL]
                     comm.send(non_converging_data, dest=0, tag=tags.NCD)
+                    print 'Task ',rank, 'sent NCD to 0'
 
                 elif tag == tags.EXIT:
                         comm.send(None, dest=0, tag=tags.EXIT)
+                        print 'Task ', rank, 'sent EXIT to 0'
                         break
 
+#        comm.send(non_converging_data, dest=0, tag=tags.EXIT)
+        print 'Task ', rank, ' sent EXIT to 0'
 
     if rank == 0:
+        print 'ORA SCRIVO I SOMMARI'
         write_non_converged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
 
         exit()    
