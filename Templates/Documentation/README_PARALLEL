@@ -26,7 +26,7 @@
 
    OR
 
-2b. copy src/coderoot.py and parallel.py in your WorkDir. 
+2b. copy src/coderoot.py and sr/parallel.py in your WorkDir. 
     Change  code_root_dir to the appropriate value. It is the string after the instruction
     return in function coderoot(), trailing / is mandatory. MUST be a full path name.
     parallel.py will do the job for you.
@@ -61,8 +61,8 @@
 
    If you have to use a queue manager, an example script is go_esoclimi
    in Template/Documentation. Uses PBS. Uses the code root as the working
-   directory, a virtual environment (that must already have been set up),
-   and launches EsoMPIsetup.bash by itself
+   directory, a virtual environment (that must already have been set up).
+   
 
 6. During the execution:
    - you can create an empty file named "stop". The code will stop.
