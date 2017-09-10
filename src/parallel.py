@@ -329,13 +329,14 @@ def make_input_parameters(_data,parameters):
     parameters['number'] = _data[0]
     return(parameters)
 
-def write_restart_file(finput,fcomputed,frestart):
+def write_restart_file(finput,fcomputed,frestart,fnonconverging,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams):
     '''
-        write a restart file every X minutes
+        write a restart file every X minutes / 100 runs
         
         file1 = input data
         file2 = executed data
         file3 = restart data
+        file4 = nonconverging restart data
         '''
     import difflib
     shutil.copyfile(frestart,frestart+".bak")
@@ -346,6 +347,19 @@ def write_restart_file(finput,fcomputed,frestart):
     delta = ''.join(x[2:] for x in diff if x.startswith('- '))
     file3.write(delta)
     file3.close()
+    file4=open(fnonconverging,'w')
+    #nonconverged cases
+    file4.write(str(nSigmaCrit)+' '+str(nTlim)+' '+str(nPressExceeded)+' '+str(nIntegrationError)+'\n')
+    for l in np.matrix(SigmaCritParams).T:
+        np.savetxt(file4,l,"%e")
+    for l in np.matrix(TlimParams).T:
+        np.savetxt(file4,l,"%e")
+    for l in np.matrix(PressExceededParams).T:
+        np.savetxt(file4,l,"%e")
+    for l in np.matrix(IntegrationErrorParams).T:
+        np.savetxt(file4,l,"%e")
+
+    file4.close()
     return
 
 def write_non_converged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams):
@@ -474,12 +488,6 @@ if __name__ == '__main__':
     PressExceededParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
     IntegrationErrorParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
 
-    # make directories where final results are stored
-    if rank == 0:
-        os.makedirs(RisultatiMultipli)
-        os.makedirs(Database)
-        os.makedirs(LogFiles)
-        os.makedirs(Thumbnails)
     #
     # open a logger (one each task==rank)
     logging.basicConfig(level=logging.DEBUG,
@@ -490,14 +498,9 @@ if __name__ == '__main__':
     if rank == 0:  ########## MASTER #################
         
 
-        # copying Michele stuff in working dir
-        shutil.copy(template_dir+"/tAtmo/"+"tAtmo_rc",workDir)
-        shutil.copytree(src_dir+'atmosphereGeometry',workDir+'/atmosphereGeometry')
-        shutil.copytree(src_dir+'atmosphereLib',workDir+'/atmosphereLib')
-        shutil.copytree(src_dir+'pipeline_interface',workDir+'/pipeline_interface')
-
         #beginning
-        restart_interval = 300 # in seconds
+        restart_interval = 1800 # in seconds
+        n_of_runs_before_restart=1000
         stop_time = 6*3600 #in seconds
         starttime= time()
         oldtime = starttime
@@ -512,17 +515,22 @@ if __name__ == '__main__':
         stop_file=workDir+"/stop"
         input_filename=workDir+"/input.txt"
         restart_file=workDir+"/restart.dat"
+        nonconverging_file=workDir+"/nonconverging.dat"
         running_input=workDir+'/input.%s.dat' % os.getpid()
 
+
+        # verifying if this is a restart
+        read_nonconverging_data = False
         try:
             fd = os.open(restart_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except OSError, e:
             if e.errno == 17:
                 logging.info("%s" % e)
                 shutil.copy(restart_file,running_input)
+                read_nonconverging_data = True
             else:
                 raise
-        else:
+        else: #GM: non capisco questo else
             shutil.copy(input_filename,running_input)
             shutil.copy(input_filename,restart_file)
 
@@ -531,7 +539,65 @@ if __name__ == '__main__':
             infile = open(running_input,"r")
         except IOError:
             print "Cannont open Input File"
+            comm.Free()
             exit() ##### verify if it exists a proper way to close MPI
+
+        #### reading non converging data upon restart ###
+        # note: this is updated every write_restart and overwritten
+        # note: THIS WILL BE VERY SLOW WITH MILLIONS OF RUNS! WE MUST MAKE IT BINARY
+        if read_nonconverging_data:
+            try:
+                nlines=1
+                ncddata=np.loadtxt(nonconverging_file)
+                for i in range(np.int(ncddata[0][0])):
+                    SigmaCritParams[0]=np.append(SigmaCritParams[0],ncddata[nlines][0])
+                    SigmaCritParams[1]=np.append(SigmaCritParams[1],ncddata[nlines][1])
+                    SigmaCritParams[2]=np.append(SigmaCritParams[2],ncddata[nlines][2])
+                    SigmaCritParams[3]=np.append(SigmaCritParams[3],ncddata[nlines][3])
+                    nlines = nlines+1
+                for i in range(np.int(ncddata[0,1])):
+                    TlimParams[0]=np.append(TlimParams[0],ncddata[nlines][0])
+                    TlimParams[1]=np.append(TlimParams[1],ncddata[nlines][1])
+                    TlimParams[2]=np.append(TlimParams[2],ncddata[nlines][2])
+                    TlimParams[3]=np.append(TlimParams[3],ncddata[nlines][3])
+                    nlines = nlines+1
+                for i in range(np.int(ncddata[0,2])):
+                    PressExceededParams[0]=np.append(PressExceededParams[0],ncddata[nlines][0])
+                    PressExceededParams[1]=np.append(PressExceededParams[1],ncddata[nlines][1])
+                    PressExceededParams[2]=np.append(PressExceededParams[2],ncddata[nlines][2])
+                    PressExceededParams[3]=np.append(PressExceededParams[3],ncddata[nlines][3])
+                    nlines = nlines+1
+                for i in range(np.int(ncddata[0,3])):
+                    IntegrationErrorParams[0]=np.append(IntegrationErrorParams[0],ncddata[nlines][0])
+                    IntegrationErrorParams[1]=np.append(IntegrationErrorParams[1],ncddata[nlines][1])
+                    IntegrationErrorParams[2]=np.append(IntegrationErrorParams[2],ncddata[nlines][2])
+                    IntegrationErrorParams[3]=np.append(IntegrationErrorParams[3],ncddata[nlines][3])
+                    nlines = nlines+1
+                nSigmaCrit = np.int(ncddata[0][0])
+                nTlim = np.int(ncddata[0][1])
+                nPressExceeded = np.int(ncddata[0][2])
+                nIntegrationError = np.int(ncddata[0][3])
+            except:
+                print "Cannot open NonConvergingData restart file"
+                comm.Free()
+                exit 
+        else:
+            # make directories where final results are stored
+            # this must NOT be done upon a restart!!
+            os.makedirs(RisultatiMultipli)
+            os.makedirs(Database)
+            os.makedirs(LogFiles)
+            os.makedirs(Thumbnails)
+
+            # copying Michele stuff in working dir
+            # this must NOT be done upon a restart!!
+            shutil.copy(template_dir+"/tAtmo/"+"tAtmo_rc",workDir)
+            shutil.copytree(src_dir+'atmosphereGeometry',workDir+'/atmosphereGeometry')
+            shutil.copytree(src_dir+'atmosphereLib',workDir+'/atmosphereLib')
+            shutil.copytree(src_dir+'pipeline_interface',workDir+'/pipeline_interface')
+
+
+
 
 # starting all workers
         new_workers=num_workers
@@ -575,13 +641,15 @@ if __name__ == '__main__':
                 if data[8]<0.: #collecting non-converger data
                     nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams,data)
 #
-                if time() - oldtime > restart_interval:
+                if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
                     logging.info("Write restart file ")
-                    write_restart_file(input_filename,computed_models_file,restart_file)
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
                     oldtime = time()
                 if os.path.isfile(stop_file):
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
                     break
                 if time() - starttime > stop_time:
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
                     break
 
                 line = infile.readline()
@@ -709,6 +777,7 @@ if __name__ == '__main__':
 
     if rank == 0:
         write_non_converged_models(nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
+        write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
 
         exit()    
 

@@ -46,6 +46,10 @@
 
    DISCLAIMER: THE INPUT.TXT FILE WILL CHANGE WHILE WE ADD NEW PARAMETERS 
 
+   WARNING: note that if a file named restart.dat exists in the WorkDir, it will
+            be used instead of input.txt
+
+
 4. Verify that all needed python modules are installed on the system.
    If not, you must create a virtual environment that includes them.
    A shell example that does this for you is in Templates/Documentation
@@ -70,13 +74,13 @@
    - the code writes a restart file each 300 seconds. if the code
      does not complete your list of cases, you can run it again, and it
      will use the file "restart.dat" instead of input.txt to complete
-     your sample (WARNING: UNTESTED)
+     your sample (see "Notes on restarts" below)
    - the code will stop anyway after 6 hours (you can change this by
      changing stop_time in parallel.py)
    - a list of completed cases can be found in the file "executed_out.dat"
 
    - you will find a number of dirs, named "0", "1".. "N" where N is the
-     number of required runs, in your WrokDir. 
+     number of required runs, in your WorkDir. 
      They are work sub-directories in which each
      core is executing ESTM separately. They are deleted after each ESTM
      runs completes.  Under each dir, you will find Src, where all
@@ -188,10 +192,50 @@ SLAVES:
 
 
 
+=======================================================================================
+	NOTES ON CHECKPOINTING/RESTARTING
+=======================================================================================
+
+ - A Restart point is created every restart_interval seconds (currently, 1800)
+   OR when a multiple of n_of_runs_before_restarting runs (currently, 1000) has
+   been completed
+
+ - two files are created: restart.dat and nonconverged.dat. The former contains
+   the cases to be run yet, the latter, all the non-converged data for the
+   runs completed. This one is read if a restart happens, and all the lists
+   containing the parameters that caused the non-convergence are loaded. This file
+   is overwritten each time a restart point is created, since it must alwais contain
+   the UPDATED non-converged dataset.
+
+ - when an emergency stop is required, a restart point is written before stopping
+
+ - when a cpu time limit is encountered, a restart point is also written.
+
+ - when the run is ended, a paranoid restart point is written, too
+   (this will consist of an empty restart.dat file and a nonconverged.dat with
+    the whole ordered list on non-converged parameters, ready to be loaded if
+    a "dummy" restart is done adding cases to restart.dat)
+
+
 
 =======================================================================================
 	DETAILED DESCRIPTION OF CODE FUNCTIONS
 =======================================================================================
   ...Giuliano mi aiuti qui?
+
+
+
+=======================================================================================
+	BUGS AND TO-DO LIST
+=======================================================================================
+
+- Bugs: currently none is known
+
+- To do:
+     WE MUST ABSOLUTELY AUTHOMATIZE THE PARAMETER INPUT STUFF.
+     IN THE CURRENT CODE VERSION, ADDING OR CUTTING ONE PARAMETER
+     FROM THOSE ON WHICH WE MUST CYCLE REQUIRES A VERY HEAVY
+     CODE UPDATE.
+
 
 
