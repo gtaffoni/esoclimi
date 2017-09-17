@@ -137,6 +137,10 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
        Test fctn for debugging the parallel setup
     '''
     import random
+    import time
+
+    time.sleep(30) #waits 30 seconds
+
     ev=random.randint(0,5)
     if ev==0:
         exitValue=-100
@@ -617,12 +621,14 @@ if __name__ == '__main__':
         #ready to go
         for i in range(1,new_workers+1):
             comm.send(None, dest=i, tag=tags.GO)
+        logging.info("tags.GO Informing workers that they can start" )
 
         #firing workers in eccess
         for i in range(new_workers+1,num_workers+1):
             comm.send(None, dest=i, tag=tags.EXIT)
             comm.send(None, dest=i, tag=tags.GO)
             comm.recv(source=MPI.ANY_SOURCE, tag=tags.EXIT, status=status)
+            logging.info("tags.EXIT + tags.GO Firing worker %d " % i )
         num_workers=new_workers
 
 #                MASTER managing SLAVES
@@ -637,35 +643,44 @@ if __name__ == '__main__':
                         myfile.write(results)
                 logging.info("tags.DONE Got data from worker %d: %s" % (source,results))
                 comm.send(None, dest=source, tag=tags.NCDS)
+                logging.info("tags.NCDS Sending divergent results request to worker %d " % source)
             elif tag == tags.NCD:
                 if data[8]<0.: #collecting non-converger data
                     nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams,data)
-#
-                if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
-                    logging.info("Write restart file ")
-                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
-                    oldtime = time()
-                if os.path.isfile(stop_file):
-                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
-                    break
-                if time() - starttime > stop_time:
-                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
-                    break
+
+                logging.info("tags.NCD Got divergent data from worker %d exit value %d" % (source,data[8]))
+
 
                 line = infile.readline()
                 if line == '': #input models finished
                     comm.send(None, dest=source, tag=tags.EXIT)
+                    logging.info("tags.EXIT Input models terminated, finishing current tasks")
                     break
 
                 simulation_index += 1
-                logging.info("tags.NCD Got data from worker %d: %s" % (source,results))
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 logging.info("tags.START Sending simulation %d to worker %d" % (simulation_index, source))
+
+
+                if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
+                    logging.info("Writing restart file ")
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
+                    oldtime = time()
+                if os.path.isfile(stop_file):
+                    logging.info("Stopping (found stop file) and writing restart file ")
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
+                    os.remove('stop')
+                    break
+                if time() - starttime > stop_time:
+                    logging.info("Stopping (time limit exceeded) and writing restart file ")
+                    write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
+                    break
+
 
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
                 logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
-    
+     
         #
         ## INPUT file completed. Collect running worker results end ask them to exit
         #
@@ -677,23 +692,26 @@ if __name__ == '__main__':
 
             if tag == tags.READY: # Should not happen unless total simulations < numer_of_workers
                 comm.send(None, dest=source, tag=tags.EXIT)
+                logging.info("tags.EXIT Received UNEXPECTED exit message to task %d" % source)
             elif tag == tags.DONE: # collect results from running workers and ask to exit
                 results = data
                 with open(computed_models_file, "a") as myfile:
                     myfile.write(results)
-                logging.info("EXIT: Got data from worker %d" % source)                
+                logging.info("tags.DONE Got data from worker %d" % source)                
                 comm.send(None, dest=source, tag=tags.NCDS)
 
             elif tag == tags.NCD:
 
+                logging.info("tags.NCD Got divergent data from worker %d with exit value %d" % (source,data[8]) )                
                 if data[8]<0.:
                     nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams = collect_non_converged_models_data(nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams,data)
 
                 comm.send(None, dest=source, tag=tags.EXIT)
+                logging.info("tags.EXIT Freeing worker %d" % source)
 
 
             elif tag == tags.EXIT: # Collect exit reply from workers
-                logging.info("EXIT: Worker %d exited." % source)
+                logging.info("tags.EXIT Worker %d exited correctly." % source)
                 closed_workers+=1
 
 
@@ -731,22 +749,27 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
 
                     # sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
+                    logging.debug("%d,0: tags.DONE sent to master" % (rank))
                 elif tag == tags.NCDS:
+                    logging.debug("%d,0: tags.NCDS received from master" % (rank))
                     non_converging_data = [nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL,exitValueL]
                     comm.send(non_converging_data, dest=0, tag=tags.NCD)
+                    logging.debug("%d,0: tags.NCD sent to master" % (rank))
                 elif tag == tags.EXIT:
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
+                    logging.debug("%d,0: tags.EXIT sent to master" % (rank))
                     break;
             else: 
                 local_simulation_index += 1
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
                 if tag == tags.START:
+                    logging.debug("%d,0: tags.START received from master" % (rank))
                     # number of non-converged runs - local data
                     nSigmaCritL = 0
                     nTlimL = 0
@@ -761,18 +784,23 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
                     #sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
+                    logging.debug("%d,0: tags.DONE sent to master" % (rank))
                 elif tag == tags.NCDS:
+                    logging.debug("%d,0: tags.NCDS received from master" % (rank))
 
                     non_converging_data = [nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL,exitValueL]
                     comm.send(non_converging_data, dest=0, tag=tags.NCD)
+                    logging.debug("%d,0: tags.NCD and data sent to master" % (rank))
 
                 elif tag == tags.EXIT:
-                        comm.send(None, dest=0, tag=tags.EXIT)
-                        break
+                    logging.debug("%d,0: tags.EXIT received from master" % (rank))
+                    comm.send(None, dest=0, tag=tags.EXIT)
+                    logging.debug("%d,0: tags.EXIT sent to master" % (rank))
+                    break
 
 
     if rank == 0:
@@ -782,3 +810,4 @@ if __name__ == '__main__':
         exit()    
 
     exit()
+    
