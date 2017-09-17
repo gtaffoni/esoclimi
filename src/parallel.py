@@ -749,7 +749,7 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
 
                     # sending back results:
@@ -784,7 +784,7 @@ if __name__ == '__main__':
                     ####################
                     # running the code:#
                     ####################
-                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi_emulate(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
+                    nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParams,nPressExceededL, nIntegrationErrorL, PressExceededParamsL,IntegrationErrorParamsL,exitValueL=esoclimi(Parameter_set,nSigmaCritL,nTlimL,SigmaCritParamsL,TlimParamsL,nPressExceededL,nIntegrationErrorL,PressExceededParamsL,IntegrationErrorParamsL)
 
                     #sending back results:
                     comm.send(inputdata[1], dest=0, tag=tags.DONE)
