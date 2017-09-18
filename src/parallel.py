@@ -156,7 +156,8 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
 
     if exitValue< -101.:
         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
-        print 'Parameters: ', Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['o']
+        print 'Parameters: ', Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']
+        comm.Free()
         exit(-200)
     elif np.abs(exitValue + 100) < 0.001 :
         nIntegrationError += 1
@@ -251,6 +252,8 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      logging.info("Open File fortran_value_result: %s", fortran_value_result_file)
      exitValue  = np.loadtxt(fortran_value_result_file)
      logging.info('ExitValue: %d', exitValue[25])
+     ### XXXX non ha scritto dopo questo debug
+
 
      #
      # ExitValue: -2 -> pressure exceeded, -0.5 -> snowball (stops), -1 -> Runaway GreenHouse -100 integration error
@@ -264,22 +267,24 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
 
      if exitValue[25]< -101.:
          print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
-         print 'Parameters: ', Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['o']
+         print 'Parameters: ', Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']
+         comm.Free()
          exit(-200)
      elif np.abs(exitValue[25] + 100) < 0.001 :
+         logging.info("Warning, integration error for case: %s %s %s %s\n", Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']) 
          nIntegrationError += 1
          IntegrationErrorParams[0] = np.append(IntegrationErrorParams[0],Parameter_set['ecc'])
          IntegrationErrorParams[1] = np.append(IntegrationErrorParams[1],Parameter_set['obl'])
          IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],Parameter_set['dist'])
          IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],Parameter_set['p'])
      elif np.abs(exitValue[25] + 2.0) < 0.001 : #pressure exceeded (should not happen!)
-         logging.info("Warning, pressure exceeded for case: %s %s %s %s\n", Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['o']) 
+         logging.info("Warning, pressure exceeded for case: %s %s %s %s\n", Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']) 
          nPressExceeded += 1
          PressExceededParams[0] = np.append(PressExceededParams[0],Parameter_set['ecc'])
          PressExceededParams[1] = np.append(PressExceededParams[1],Parameter_set['obl'])
          PressExceededParams[2] = np.append(PressExceededParams[2],Parameter_set['dist'])
          PressExceededParams[3] = np.append(PressExceededParams[3],Parameter_set['p'])
-     elif np.abs(exitValue[25] + 1.0) < 0.001 : #Runaway GreenHouse
+     elif np.abs(exitValue[25] + 1.0) < 0.001 : #Runaway GreenHouse 
          nSigmaCrit += 1
          SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['ecc'])
          SigmaCritParams[1] = np.append(SigmaCritParams[1],Parameter_set['obl'])
