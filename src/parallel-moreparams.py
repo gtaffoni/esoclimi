@@ -177,7 +177,7 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         PressExceededParams[2] = np.append(PressExceededParams[2],Parameter_set['obl'])
         PressExceededParams[3] = np.append(PressExceededParams[3],Parameter_set['dist'])
         PressExceededParams[4] = np.append(PressExceededParams[4],Parameter_set['gg'])
-        PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo'])
+        PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo_const'])
     elif np.abs(exitValue + 1.0) < 0.001 : #Runaway GreenHouse
         nSigmaCrit += 1
         SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['p'])
@@ -185,7 +185,7 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         SigmaCritParams[2] = np.append(SigmaCritParams[2],Parameter_set['obl'])
         SigmaCritParams[3] = np.append(SigmaCritParams[3],Parameter_set['dist'])
         SigmaCritParams[4] = np.append(SigmaCritParams[4],Parameter_set['gg'])
-        SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo'])
+        SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo_const'])
     elif np.abs(exitValue + 0.5) < 0.001: #SnowBall
         nTlim += 1
         TlimParams[0] = np.append(TlimParams[0],Parameter_set['p'])
@@ -193,7 +193,7 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         TlimParams[2] = np.append(TlimParams[2],Parameter_set['obl'])
         TlimParams[3] = np.append(TlimParams[3],Parameter_set['dist'])
         TlimParams[4] = np.append(TlimParams[4],Parameter_set['gg'])
-        TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo'])
+        TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo_const'])
 
     return(nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams, exitValue)
     
@@ -210,10 +210,10 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      #
      #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
      #
-     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'],Parameter_set['fo'])
+     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'],Parameter_set['fo_const'])
      # initilize log file for simulation
      
-     logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dist=%s gtype=%d fo=%4.2f",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'],Parameter_set['gg'],Parameter_set['fo'])
+     logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dist=%s gtype=%d fo=%4.2f",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'],Parameter_set['gg'],Parameter_set['fo_const'])
      make_work_area(localWorkDir)
      os.chdir(localWorkDir)
      
@@ -287,7 +287,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],Parameter_set['obl'])
          IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],Parameter_set['dist'])
          IntegrationErrorParams[4] = np.append(IntegrationErrorParams[4],Parameter_set['gg'])
-         IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],Parameter_set['fo'])
+         IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],Parameter_set['fo_const'])
      elif np.abs(exitValue[25] + 2.0) < 0.001 : #pressure exceeded (should not happen!)
          logging.info("Warning, pressure exceeded for case: %s %s %s %s\n", Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']) 
          nPressExceeded += 1
@@ -296,7 +296,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          PressExceededParams[2] = np.append(PressExceededParams[2],Parameter_set['obl'])
          PressExceededParams[3] = np.append(PressExceededParams[3],Parameter_set['dist'])
          PressExceededParams[4] = np.append(PressExceededParams[4],Parameter_set['gg'])
-         PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo'])
+         PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo_const'])
      elif np.abs(exitValue[25] + 1.0) < 0.001 : #Runaway GreenHouse 
          nSigmaCrit += 1
          SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['p'])
@@ -304,7 +304,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          SigmaCritParams[2] = np.append(SigmaCritParams[2],Parameter_set['obl'])
          SigmaCritParams[3] = np.append(SigmaCritParams[3],Parameter_set['dist'])
          SigmaCritParams[4] = np.append(SigmaCritParams[4],Parameter_set['gg'])
-         SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo'])
+         SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo_const'])
      elif np.abs(exitValue[25] + 0.5) < 0.001: #SnowBall
          nTlim += 1
          TlimParams[0] = np.append(TlimParams[0],Parameter_set['p'])
@@ -312,7 +312,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          TlimParams[2] = np.append(TlimParams[2],Parameter_set['obl'])
          TlimParams[3] = np.append(TlimParams[3],Parameter_set['dist'])
          TlimParams[4] = np.append(TlimParams[4],Parameter_set['gg'])
-         TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo'])
+         TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo_const'])
 
      os.chdir(localWorkDir)
      logging.debug("%d => %s",Parameter_set['number'], os.getcwd())
@@ -358,7 +358,7 @@ def make_input_parameters(_data,parameters):
     parameters['gg'] = input_params[4]
     parameters['fo_const'] = input_params[5]
 
-   return(parameters)
+    return(parameters)
 
 def write_restart_file(finput,fcomputed,frestart,fnonconverging,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams):
     '''
