@@ -61,15 +61,19 @@ def archive_results(str, src, planet, Risultati):
     '''
     import os
     import shutil
-    shutil.copy(src+"/parEBM.h",Risultati)
-    shutil.copy(src+"/"+planet+".h",Risultati)
+    try: #this is to make this thing work with _emulate
+        shutil.copy(src+"/parEBM.h",Risultati)
+        shutil.copy(src+"/"+planet+".h",Risultati)
+    except:
+        pass
+
     try: #target dir could already exist, if this is a restart
         os.mkdir(str)
     except:
         pass
     collective_move(Risultati,str)
     return
-
+ 
 
 
 def archive_logs(str,log):

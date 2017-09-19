@@ -18,7 +18,7 @@
     * simulation number
     
     
-    Values of Pressure, Radii Obliquities and Eccentricities to cycle
+    Values of Pressure, Radii Obliquities, Eccentricities gtype, ocean fraction to cycle
     
     WARNING, 0.001 e 0.005 of pressure are not working
     Pressures are epressed in times the Earth value
@@ -140,37 +140,8 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
     '''
     import random
     import time
-    import numpy as np
-    localWorkDir    = "%s/%d/" % (workDir,Parameter_set['number'])
-    localSrcDir     = "%s%s/" % (localWorkDir,Src)
-    localResultDir = "%s%s/" % (localSrcDir,Risultati)
-    os.chdir(workDir)
-    os.mkdir(localWorkDir)
-    results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'])
 
-
-    time.sleep(15) #waits 30 seconds
-    make_work_area(localWorkDir)
-    os.chdir(localWorkDir)
-     
-    logging.info("%s",os.getcwd())
- 
-    #Complile and Run
-    str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (Parameter_set['number'],Parameter_set['version'],Parameter_set['simtype'])
-    logging.info("%d => %s",Parameter_set['number'], str)
-    #    setupEBM(Parameter_set,localSrcDir)
-    log_file_local=open(localWorkDir+"/out.log",'w')    #open log file name is out.log
-
-    ###########################
-    # compiling and running   #
-    ###########################
-    #     compileEBM(localSrcDir,log_file_local)
-    #     runEBM(localSrcDir,log_file_local)
-
-    log_file_local.close()
-
-    #VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES 
-    # (no fits produced in that case!)
+    time.sleep(30) #waits 30 seconds
 
     ev=random.randint(0,5)
     if ev==0:
@@ -196,6 +167,8 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         IntegrationErrorParams[1] = np.append(IntegrationErrorParams[1],Parameter_set['ecc'])
         IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],Parameter_set['obl'])
         IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],Parameter_set['dist'])
+        IntegrationErrorParams[4] = np.append(IntegrationErrorParams[4],Parameter_set['gg'])
+        IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],Parameter_set['f0'])
     elif np.abs(exitValue + 2.0) < 0.001 : #pressure exceeded (should not happen!)
         logging.info("Warning, pressure exceeded ")
         nPressExceeded += 1
@@ -203,37 +176,24 @@ def esoclimi_emulate(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,n
         PressExceededParams[1] = np.append(PressExceededParams[1],Parameter_set['ecc'])
         PressExceededParams[2] = np.append(PressExceededParams[2],Parameter_set['obl'])
         PressExceededParams[3] = np.append(PressExceededParams[3],Parameter_set['dist'])
+        PressExceededParams[4] = np.append(PressExceededParams[4],Parameter_set['gg'])
+        PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo'])
     elif np.abs(exitValue + 1.0) < 0.001 : #Runaway GreenHouse
         nSigmaCrit += 1
         SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['p'])
         SigmaCritParams[1] = np.append(SigmaCritParams[1],Parameter_set['ecc'])
         SigmaCritParams[2] = np.append(SigmaCritParams[2],Parameter_set['obl'])
         SigmaCritParams[3] = np.append(SigmaCritParams[3],Parameter_set['dist'])
+        SigmaCritParams[4] = np.append(SigmaCritParams[4],Parameter_set['gg'])
+        SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo'])
     elif np.abs(exitValue + 0.5) < 0.001: #SnowBall
         nTlim += 1
         TlimParams[0] = np.append(TlimParams[0],Parameter_set['p'])
         TlimParams[1] = np.append(TlimParams[1],Parameter_set['ecc'])
         TlimParams[2] = np.append(TlimParams[2],Parameter_set['obl'])
         TlimParams[3] = np.append(TlimParams[3],Parameter_set['dist'])
-
-    os.chdir(localWorkDir)
-    logging.debug("%d => %s",Parameter_set['number'], os.getcwd())
-    logging.debug("%d => %s",Parameter_set['number'], os.listdir("."))
-     
-    #archiving Risults
-    results_location="%s/Risultati%s"%(workDir+"/"+RisultatiMultipli,results_string)
-    logging.debug("%d => Archive results to: %s",Parameter_set['number'], results_location)
-    archive_results(results_location,Src,Parameter_set['planet'],localResultDir)
-     
-    # close log file and archiving it DO We NEED THAT? YES!
-    log_dir_name="%s/%s/log%s"%(workDir,LogFiles,results_string)
-    logging.debug("Closing log file and archive to: %s",log_dir_name)
-    archive_logs(log_dir_name,localWorkDir+"/out.log")
-
-    #back to main dir
-    os.chdir(workDir)
-    CleanAllPartialResults(localWorkDir)
-
+        TlimParams[4] = np.append(TlimParams[4],Parameter_set['gg'])
+        TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo'])
 
     return(nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams, exitValue)
     
@@ -250,10 +210,10 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      #
      #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
      #
-     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'])
+     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'],Parameter_set['fo'])
      # initilize log file for simulation
      
-     logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dits=%s",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'])
+     logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dist=%s gtype=%d fo=%4.2f",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'],Parameter_set['gg'],Parameter_set['fo'])
      make_work_area(localWorkDir)
      os.chdir(localWorkDir)
      
@@ -326,6 +286,8 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          IntegrationErrorParams[1] = np.append(IntegrationErrorParams[1],Parameter_set['ecc'])
          IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],Parameter_set['obl'])
          IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],Parameter_set['dist'])
+         IntegrationErrorParams[4] = np.append(IntegrationErrorParams[4],Parameter_set['gg'])
+         IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],Parameter_set['fo'])
      elif np.abs(exitValue[25] + 2.0) < 0.001 : #pressure exceeded (should not happen!)
          logging.info("Warning, pressure exceeded for case: %s %s %s %s\n", Parameter_set['ecc'], Parameter_set['obl'], Parameter_set['dist'], Parameter_set['obl']) 
          nPressExceeded += 1
@@ -333,18 +295,24 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
          PressExceededParams[1] = np.append(PressExceededParams[1],Parameter_set['ecc'])
          PressExceededParams[2] = np.append(PressExceededParams[2],Parameter_set['obl'])
          PressExceededParams[3] = np.append(PressExceededParams[3],Parameter_set['dist'])
+         PressExceededParams[4] = np.append(PressExceededParams[4],Parameter_set['gg'])
+         PressExceededParams[5] = np.append(PressExceededParams[5],Parameter_set['fo'])
      elif np.abs(exitValue[25] + 1.0) < 0.001 : #Runaway GreenHouse 
          nSigmaCrit += 1
          SigmaCritParams[0] = np.append(SigmaCritParams[0],Parameter_set['p'])
          SigmaCritParams[1] = np.append(SigmaCritParams[1],Parameter_set['ecc'])
          SigmaCritParams[2] = np.append(SigmaCritParams[2],Parameter_set['obl'])
          SigmaCritParams[3] = np.append(SigmaCritParams[3],Parameter_set['dist'])
+         SigmaCritParams[4] = np.append(SigmaCritParams[4],Parameter_set['gg'])
+         SigmaCritParams[5] = np.append(SigmaCritParams[5],Parameter_set['fo'])
      elif np.abs(exitValue[25] + 0.5) < 0.001: #SnowBall
          nTlim += 1
          TlimParams[0] = np.append(TlimParams[0],Parameter_set['p'])
          TlimParams[1] = np.append(TlimParams[1],Parameter_set['ecc'])
          TlimParams[2] = np.append(TlimParams[2],Parameter_set['obl'])
          TlimParams[3] = np.append(TlimParams[3],Parameter_set['dist'])
+         TlimParams[4] = np.append(TlimParams[4],Parameter_set['gg'])
+         TlimParams[5] = np.append(TlimParams[5],Parameter_set['fo'])
 
      os.chdir(localWorkDir)
      logging.debug("%d => %s",Parameter_set['number'], os.getcwd())
@@ -375,8 +343,8 @@ def make_input_parameters(_data,parameters):
      #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
      #
     input_params=np.fromstring(_data[1], dtype=float, sep=' ')
-    parameters['gg']         = 0      #geography
-    parameters['fo_const']   = 0.7    #ocean fraction (only for gg=0)
+#    parameters['gg']         = 0      #geography
+#    parameters['fo_const']   = 0.7    #ocean fraction (only for gg=0)
     parameters['p_CO2_P']    = 380   #CO2 partial pressure IN PPVM
     parameters['CO2_Earth_ratio']= 1.0  #the same, in Earth ratio (for output)
     parameters['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
@@ -386,7 +354,11 @@ def make_input_parameters(_data,parameters):
     parameters['ecc'] = input_params[1]     # eccentricity of planet orbit
     parameters['p'] = input_params[0]       # pressure
     parameters['number'] = _data[0]
-    return(parameters)
+    # new parameters
+    parameters['gg'] = input_params[4]
+    parameters['fo_const'] = input_params[5]
+
+   return(parameters)
 
 def write_restart_file(finput,fcomputed,frestart,fnonconverging,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams):
     '''
@@ -398,13 +370,8 @@ def write_restart_file(finput,fcomputed,frestart,fnonconverging,nSigmaCrit,nTlim
         file4 = nonconverging restart data
         '''
     import difflib
-
     shutil.copyfile(frestart,frestart+".bak")
-    try:
-        shutil.copyfile(fnonconverging,fnonconverging+".bak")
-    except:
-        pass
-
+    shutil.copyfile(fnonconverging,fnonconverging+".bak")
     file1=open(finput)
     file2=open(fcomputed)
     file3=open(frestart,"w")
@@ -488,20 +455,28 @@ def collect_non_converged_models_data(nSigmaCrit, nTlim, SigmaCritParams, TlimPa
      SigmaCritParams[1] = np.append(SigmaCritParams[1],data[2][1])
      SigmaCritParams[2] = np.append(SigmaCritParams[2],data[2][2])
      SigmaCritParams[3] = np.append(SigmaCritParams[3],data[2][3])
+     SigmaCritParams[4] = np.append(SigmaCritParams[4],data[2][4])
+     SigmaCritParams[5] = np.append(SigmaCritParams[5],data[2][5])
      TlimParams[0] = np.append(TlimParams[0],data[3][0])
      TlimParams[1] = np.append(TlimParams[1],data[3][1])
      TlimParams[2] = np.append(TlimParams[2],data[3][2])
      TlimParams[3] = np.append(TlimParams[3],data[3][3])
+     TlimParams[4] = np.append(TlimParams[4],data[3][4])
+     TlimParams[5] = np.append(TlimParams[5],data[3][5])
      nPressExceeded = nPressExceeded + data[4]
      nIntegrationError  = nIntegrationError + data[5]
      PressExceededParams[0] = np.append(PressExceededParams[0],data[6][0])
      PressExceededParams[1] = np.append(PressExceededParams[1],data[6][1])
      PressExceededParams[2] = np.append(PressExceededParams[2],data[6][2])
      PressExceededParams[3] = np.append(PressExceededParams[3],data[6][3])
+     PressExceededParams[4] = np.append(PressExceededParams[4],data[6][4])
+     PressExceededParams[5] = np.append(PressExceededParams[5],data[6][5])
      IntegrationErrorParams[0] = np.append(IntegrationErrorParams[0],data[7][0])
      IntegrationErrorParams[1] = np.append(IntegrationErrorParams[1],data[7][1])
      IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],data[7][2])
      IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],data[7][3])
+     IntegrationErrorParams[4] = np.append(IntegrationErrorParams[4],data[7][4])
+     IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],data[7][5])
     except: #GM emergency hotfix! something went horribly wrong, but the show must go on...
      nSigmaCrit = nSigmaCrit 
      nTlim = nTlim 
@@ -509,20 +484,28 @@ def collect_non_converged_models_data(nSigmaCrit, nTlim, SigmaCritParams, TlimPa
      SigmaCritParams[1] = np.append(SigmaCritParams[1],-666.0)
      SigmaCritParams[2] = np.append(SigmaCritParams[2],-666.0)
      SigmaCritParams[3] = np.append(SigmaCritParams[3],-666.0)
+     SigmaCritParams[4] = np.append(SigmaCritParams[4],-666.0)
+     SigmaCritParams[5] = np.append(SigmaCritParams[5],-666.0)
      TlimParams[0] = np.append(TlimParams[0],-666.0)
      TlimParams[1] = np.append(TlimParams[1],-666.0)
      TlimParams[2] = np.append(TlimParams[2],-666.0)
      TlimParams[3] = np.append(TlimParams[3],-666.0)
+     TlimParams[4] = np.append(TlimParams[4],-666.0)
+     TlimParams[5] = np.append(TlimParams[5],-666.0)
      nPressExceeded = nPressExceeded
      nIntegrationError  = nIntegrationError 
      PressExceededParams[0] = np.append(PressExceededParams[0],-666.0)
      PressExceededParams[1] = np.append(PressExceededParams[1],-666.0)
      PressExceededParams[2] = np.append(PressExceededParams[2],-666.0)
      PressExceededParams[3] = np.append(PressExceededParams[3],-666.0)
+     PressExceededParams[4] = np.append(PressExceededParams[4],-666.0)
+     PressExceededParams[5] = np.append(PressExceededParams[5],-666.0)
      IntegrationErrorParams[0] = np.append(IntegrationErrorParams[0],-666.0)
      IntegrationErrorParams[1] = np.append(IntegrationErrorParams[1],-666.0)
      IntegrationErrorParams[2] = np.append(IntegrationErrorParams[2],-666.0)
      IntegrationErrorParams[3] = np.append(IntegrationErrorParams[3],-666.0)
+     IntegrationErrorParams[4] = np.append(IntegrationErrorParams[4],-666.0)
+     IntegrationErrorParams[5] = np.append(IntegrationErrorParams[5],-666.0)
 
     return(nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams)
 
@@ -548,10 +531,10 @@ if __name__ == '__main__':
 
 
     #parameter values for non-converged runs
-    SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-    TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-    PressExceededParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-    IntegrationErrorParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+    SigmaCritParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+    TlimParams= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+    PressExceededParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0),  np.empty(shape=0), np.empty(shape=0)]
+    IntegrationErrorParams=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0),  np.empty(shape=0), np.empty(shape=0)]
 
     #
     # open a logger (one each task==rank)
@@ -619,24 +602,32 @@ if __name__ == '__main__':
                     SigmaCritParams[1]=np.append(SigmaCritParams[1],ncddata[nlines][1])
                     SigmaCritParams[2]=np.append(SigmaCritParams[2],ncddata[nlines][2])
                     SigmaCritParams[3]=np.append(SigmaCritParams[3],ncddata[nlines][3])
+                    SigmaCritParams[4]=np.append(SigmaCritParams[4],ncddata[nlines][4])
+                    SigmaCritParams[5]=np.append(SigmaCritParams[5],ncddata[nlines][5])
                     nlines = nlines+1
                 for i in range(np.int(ncddata[0,1])):
                     TlimParams[0]=np.append(TlimParams[0],ncddata[nlines][0])
                     TlimParams[1]=np.append(TlimParams[1],ncddata[nlines][1])
                     TlimParams[2]=np.append(TlimParams[2],ncddata[nlines][2])
                     TlimParams[3]=np.append(TlimParams[3],ncddata[nlines][3])
+                    TlimParams[4]=np.append(TlimParams[4],ncddata[nlines][4])
+                    TlimParams[5]=np.append(TlimParams[5],ncddata[nlines][5])
                     nlines = nlines+1
                 for i in range(np.int(ncddata[0,2])):
                     PressExceededParams[0]=np.append(PressExceededParams[0],ncddata[nlines][0])
                     PressExceededParams[1]=np.append(PressExceededParams[1],ncddata[nlines][1])
                     PressExceededParams[2]=np.append(PressExceededParams[2],ncddata[nlines][2])
                     PressExceededParams[3]=np.append(PressExceededParams[3],ncddata[nlines][3])
+                    PressExceededParams[4]=np.append(PressExceededParams[4],ncddata[nlines][4])
+                    PressExceededParams[5]=np.append(PressExceededParams[5],ncddata[nlines][5])
                     nlines = nlines+1
                 for i in range(np.int(ncddata[0,3])):
                     IntegrationErrorParams[0]=np.append(IntegrationErrorParams[0],ncddata[nlines][0])
                     IntegrationErrorParams[1]=np.append(IntegrationErrorParams[1],ncddata[nlines][1])
                     IntegrationErrorParams[2]=np.append(IntegrationErrorParams[2],ncddata[nlines][2])
                     IntegrationErrorParams[3]=np.append(IntegrationErrorParams[3],ncddata[nlines][3])
+                    IntegrationErrorParams[4]=np.append(IntegrationErrorParams[4],ncddata[nlines][4])
+                    IntegrationErrorParams[5]=np.append(IntegrationErrorParams[5],ncddata[nlines][5])
                     nlines = nlines+1
                 nSigmaCrit = np.int(ncddata[0][0])
                 nTlim = np.int(ncddata[0][1])
@@ -675,7 +666,7 @@ if __name__ == '__main__':
                 if line == '': #more workers than input models
                     new_workers=i-1
                     break
-                logging.info("tags.READY Sending simulation %d to worker %d params %s" % (simulation_index, source, line))
+                logging.info("tags.READY Sending simulation %d to worker %d (%s)" % (simulation_index, source, line))
                 comm.send([simulation_index,line], dest=i, tag=tags.START)
                 simulation_index += 1
             
@@ -720,13 +711,12 @@ if __name__ == '__main__':
 
                 simulation_index += 1
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
-                logging.info("tags.START Sending simulation %d to worker %d params %s" % (simulation_index, source, line))
+                logging.info("tags.START Sending simulation %d to worker %d (%s)" % (simulation_index, source, line))
 
 
                 if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
-                    logging.info("Writing restart files ")
+                    logging.info("Writing restart file ")
                     write_restart_file(input_filename,computed_models_file,restart_file,nonconverging_file,nSigmaCrit,nTlim,simulation_index,SigmaCritParams,TlimParams,nPressExceeded,nIntegrationError,PressExceededParams,IntegrationErrorParams)
-                    logging.info('Restart files ok')
                     oldtime = time()
                 if os.path.isfile(stop_file):
                     logging.info("Stopping (found stop file) and writing restart file ")
@@ -802,10 +792,10 @@ if __name__ == '__main__':
                     nPressExceededL = 0
                     nIntegrationErrorL = 0
                     #parameter values for non-converged runs - local data
-                    SigmaCritParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    TlimParamsL= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    PressExceededParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    IntegrationErrorParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    SigmaCritParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    TlimParamsL= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    PressExceededParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    IntegrationErrorParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
 
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
                     ####################
@@ -838,10 +828,10 @@ if __name__ == '__main__':
                     nPressExceededL = 0
                     nIntegrationErrorL = 0
                     #parameter values for non-converged runs - local data
-                    SigmaCritParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    TlimParamsL= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    PressExceededParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
-                    IntegrationErrorParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    SigmaCritParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    TlimParamsL= [ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    PressExceededParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
+                    IntegrationErrorParamsL=[ np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0), np.empty(shape=0)]
                     Parameter_set = make_input_parameters(inputdata,Parameter_set)
                     ####################
                     # running the code:#

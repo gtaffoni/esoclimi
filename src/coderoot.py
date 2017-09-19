@@ -1,5 +1,5 @@
 def coderoot():
- return '/u/exanest01/Gius-BeeGfs/Esoclimi/MPItestFINAL/'
+ return '/u/gmurante/scratch/Esoclimi/esoMPI-F07/'
 
 def copyfiles(src_dir, template_dir):
  import shutil
