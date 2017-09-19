@@ -200,7 +200,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      #
      #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
      #
-     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['p_CO2_P'],Parameter_set['gg'])
+     results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d"%(Parameter_set['p'],Parameter_set['ecc'],Parameter_set['dist'],Parameter_set['obl'],Parameter_set['CO2_Earth_ratio'],Parameter_set['gg'])
      # initilize log file for simulation
      
      logging.info("%d => Begin computation for p=%f ecc=%f obl=%f dits=%s",Parameter_set['number'], Parameter_set['p'],Parameter_set['ecc'],Parameter_set['obl'],Parameter_set['dist'])
@@ -208,7 +208,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      os.chdir(localWorkDir)
      
      logging.info("%s",os.getcwd())
-
+ 
      #Complile and Run
      str="python runEBM.py PRESSUREScurr.py %d %s %s > log " % (Parameter_set['number'],Parameter_set['version'],Parameter_set['simtype'])
      logging.info("%d => %s",Parameter_set['number'], str)
@@ -252,7 +252,6 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      logging.info("Open File fortran_value_result: %s", fortran_value_result_file)
      exitValue  = np.loadtxt(fortran_value_result_file)
      logging.info('ExitValue: %d', exitValue[25])
-     ### XXXX non ha scritto dopo questo debug
 
 
      #
@@ -302,7 +301,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      logging.debug("%d => %s",Parameter_set['number'], os.listdir("."))
      
      #archiving Risults
-     results_location="%s/Risultati_Press%s"%(workDir+"/"+RisultatiMultipli,results_string)
+     results_location="%s/Risultati%s"%(workDir+"/"+RisultatiMultipli,results_string)
      logging.debug("%d => Archive results to: %s",Parameter_set['number'], results_location)
      archive_results(results_location,Src,Parameter_set['planet'],localResultDir)
      
@@ -316,7 +315,7 @@ def esoclimi(Parameter_set,nSigmaCrit,nTlim,SigmaCritParams,TlimParams,nPressExc
      CleanAllPartialResults(localWorkDir)
      return(nSigmaCrit, nTlim, SigmaCritParams, TlimParams, nPressExceeded, nIntegrationError, PressExceededParams, IntegrationErrorParams, exitValue[25])
 
-
+ 
 def make_input_parameters(_data,parameters):
     '''
         Convert input from rank 0 into set of parametes
@@ -327,8 +326,9 @@ def make_input_parameters(_data,parameters):
      #
     input_params=np.fromstring(_data[1], dtype=float, sep=' ')
     parameters['gg']         = 0      #geography
-    parameters['fo_const']   = 0.4    #ocean fraction (only for gg=0)
-    parameters['p_CO2_P']    = 3800   #CO2 partial pressure IN PPVM
+    parameters['fo_const']   = 0.7    #ocean fraction (only for gg=0)
+    parameters['p_CO2_P']    = 380   #CO2 partial pressure IN PPVM
+    parameters['CO2_Earth_ratio']= 1.0  #the same, in Earth ratio (for output)
     parameters['TOAalbfile'] = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
     parameters['OLRfile']    = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
     parameters['dist'] = input_params[3]    # semi-major axis of planet orbit
@@ -349,6 +349,7 @@ def write_restart_file(finput,fcomputed,frestart,fnonconverging,nSigmaCrit,nTlim
         '''
     import difflib
     shutil.copyfile(frestart,frestart+".bak")
+    shutil.copyfile(fnonconverging,fnonconverging+".bak")
     file1=open(finput)
     file2=open(fcomputed)
     file3=open(frestart,"w")
@@ -510,7 +511,7 @@ if __name__ == '__main__':
         #beginning
         restart_interval = 1800 # in seconds
         n_of_runs_before_restart=1000
-        stop_time = 6*3600 #in seconds
+        stop_time = 11*3600 #in seconds
         starttime= time()
         oldtime = starttime
         simulation_index = 0
@@ -619,7 +620,7 @@ if __name__ == '__main__':
                 if line == '': #more workers than input models
                     new_workers=i-1
                     break
-                logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
+                logging.info("tags.READY Sending simulation %d to worker %d (%s)" % (simulation_index, source, line))
                 comm.send([simulation_index,line], dest=i, tag=tags.START)
                 simulation_index += 1
             

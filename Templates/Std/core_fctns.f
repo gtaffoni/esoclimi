@@ -868,8 +868,8 @@ c  the .fits file from the run. The above python script also need year_lat_temp_
      >     fo_const
       write(28,'("PRESS!",E16.8 
      >"!total dry pressure at planet surface [Pa]!F")') pressP
-      write(28,'("PO2!209460.0!O2 partial pressure [ppvm]!F")')    !!!!WARNING, FOR FUTURE USE
-      write(28,'("PN2!780840.0!N2 partial pressure [ppvm]!F")')    !!!!WARNING, FOR FUTURE USE
+      write(28,'("PO2!209460.0!O2 partial pressure [Pa]!F")')    !!!!WARNING, FOR FUTURE USE
+      write(28,'("PN2!780840.0!N2 partial pressure [Pa]!F")')    !!!!WARNING, FOR FUTURE USE
       write(28,'("P_CO2!",E16.8,"!CO2 partial pressure [ppvm]!F")') 
      >     p_CO2_P*10 !!!WARNING, from Pascal to PPMV
       write(28,'("P_CH4!1.8!CH4 partial pressure [ppvm]!F")') !!!!WARNING, FOR FUTURE USE

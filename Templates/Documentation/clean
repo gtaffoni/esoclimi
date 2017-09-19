@@ -1,8 +1,8 @@
 rm -rf Database/ LogFiles/ RisultatiMultipli/ Thumbnails/
 rm run*log
-rm NonConverged.dat  SnowBall-Params.dat  RunawayGreenhouse-Params.dat
+rm NonConverged.dat  SnowBall-Params.dat  RunawayGreenhouse-Params.dat IntegrationError-Params.dat PressExceeded-Params.dat
 rm -rf atmosphereGeometry atmosphereLib pipeline_interface
-rm restart.dat
+rm restart.dat nonconverging.dat executed.out
 rm input.?????.dat
 rm input.????.dat
 echo "   "

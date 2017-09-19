@@ -37,10 +37,13 @@ def collective_move (src, dest):
     src_files = os.listdir(src)
     for file_name in src_files:
         full_file_name = os.path.join(src, file_name)
-        if (os.path.isfile(full_file_name)):
+        if (os.path.isfile(full_file_name)): #I want to OVERWRITE results, otherwise restarts will not work
+            try:
+                os.remove(dest)
+            except OSError:
+                pass
             shutil.move(full_file_name, dest)
     return
-
 
 
 
@@ -60,7 +63,10 @@ def archive_results(str, src, planet, Risultati):
     import shutil
     shutil.copy(src+"/parEBM.h",Risultati)
     shutil.copy(src+"/"+planet+".h",Risultati)
-    os.mkdir(str)
+    try: #target dir could already exist, if this is a restart
+        os.mkdir(str)
+    except:
+        pass
     collective_move(Risultati,str)
     return
 
@@ -74,9 +80,15 @@ def archive_logs(str,log):
         
     '''
     import shutil
+    import os
+
+    try: #I want to OVERWRITE logs or restarts will not work
+        os.remove(str)
+    except OSError:
+        pass
     shutil.move(log,str)
 
-
+ 
 def CleanAllPartialResults(localDir):
     '''
         CleanAllPartialResults(localDir)
