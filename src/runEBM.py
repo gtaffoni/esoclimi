@@ -15,20 +15,17 @@
     
 """
 
-
 def setupEBM(parameters,_dir):
 # REMEMBER TO ADD CALCULUS OF PLANET MASS AND CHANGE BELOW
     import sys
     from libraryEBM import modulationPAR
     from constantsEBM import *
-    import logging
     import shutil
 
     NUMBER = parameters['number']
     VERSION = parameters['version']
     SIMTYPE = parameters['simtype']
     planet = parameters['planet']
-    logging.info("reading %s parameters", planet)
     ### assign parameter values from input better in the future
     ff            = parameters['p']
     eccP          = parameters['ecc']
@@ -269,27 +266,22 @@ def setupEBM(parameters,_dir):
 
 
 def compileEBM(runDir,logfile):
-    import logging
     #from posix import system
     import subprocess
     import os
-    logging.info("Compile codes")
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
-    logging.info("")
     p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
     # p is the return code of Make so we can make some check
     os.chdir(origin)
 
 
 def runEBM(runDir,logfile):
-    import logging
     import subprocess
     import os
     origin = os.getcwd()
     # move to the proper directory
-    logging.info("Run program")
     os.chdir(runDir)
     p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
     os.chdir(origin)

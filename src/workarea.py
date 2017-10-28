@@ -17,12 +17,18 @@ def copyall (src, dest):
     '''
     import os
     import shutil
+    err = 0
     src_files = os.listdir(src)
     for file_name in src_files:
         full_file_name = os.path.join(src, file_name)
         if (os.path.isfile(full_file_name)):
-            shutil.copy(full_file_name, dest)
-    return
+            try:
+                shutil.copy(full_file_name, dest)
+            except ValueError as e:
+                print(e.args)
+                err=256
+                pass
+    return err
 
 
 def collective_move (src, dest):
@@ -32,6 +38,7 @@ def collective_move (src, dest):
         move all files from src directory  to dest directory
         one by one
     '''
+    err = 0
     import os
     import shutil
     src_files = os.listdir(src)
@@ -42,15 +49,21 @@ def collective_move (src, dest):
                 os.remove(dest)
             except OSError:
                 pass
-            shutil.move(full_file_name, dest)
-    return
+                err = 256
+            try:
+                shutil.move(full_file_name, dest)
+            except ValueError as e:
+                print(e.args)
+                err=256
+                pass
+    return err
 
 
 
 
 def archive_results(str, src, planet, Risultati):
     '''
-        archive_results(str,src,Risultati)
+        archive_results(str,src,planet,Risultati)
         
         archive results from run directories
         
@@ -61,18 +74,27 @@ def archive_results(str, src, planet, Risultati):
     '''
     import os
     import shutil
+    err = 0
     try: #this is to make this thing work with _emulate
         shutil.copy(src+"/parEBM.h",Risultati)
         shutil.copy(src+"/"+planet+".h",Risultati)
     except:
+        err += 1
         pass
-
+    
     try: #target dir could already exist, if this is a restart
         os.mkdir(str)
     except:
+        err += 1
         pass
-    collective_move(Risultati,str)
-    return
+    try:
+        collective_move(Risultati,str)
+    except:
+        err +=1
+        pass
+    if err > 0:
+        err = 256
+    return err
  
 
 
@@ -85,14 +107,19 @@ def archive_logs(str,log):
     '''
     import shutil
     import os
-
+    err = 0
     try: #I want to OVERWRITE logs or restarts will not work
         os.remove(str)
     except OSError:
+        err = 256
         pass
-    shutil.move(log,str)
+    try:
+        shutil.move(log,str)
+    except:
+        err = 256
+        pass
+    return err
 
- 
 def CleanAllPartialResults(localDir):
     '''
         CleanAllPartialResults(localDir)

@@ -28,7 +28,7 @@ def tAtmo(exop_par_file_name, workdir, logfile):
    """
 
    from pipeline_interface import CONFIG
-   CONFIG(workdir + '/tAtmo_rc') #reads the rc_file
+   CONFIG(workdir+'/src/tAtmo_rc') #reads the rc_file
    #
    #####################################
 
