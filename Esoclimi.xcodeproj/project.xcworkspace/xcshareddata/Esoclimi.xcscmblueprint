@@ -1,0 +1,30 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "941520CEB563E92DFB1E4A1A0948A9D30DB8DE4A",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "941520CEB563E92DFB1E4A1A0948A9D30DB8DE4A" : 9223372036854775807,
+    "2AD314071FDAAB294EFD1B8C820B43C3F1F6BEAD" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "369DFF1A-B313-499A-9F95-FDA091E51990",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "941520CEB563E92DFB1E4A1A0948A9D30DB8DE4A" : "Devel\/",
+    "2AD314071FDAAB294EFD1B8C820B43C3F1F6BEAD" : "Devel\/Templates\/tAtmo\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "Esoclimi",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "Esoclimi.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/www.ict.inaf.it\/gitlab\/michele.maris\/tAtmo.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "2AD314071FDAAB294EFD1B8C820B43C3F1F6BEAD"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/gtaffoni\/esoclimi.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "941520CEB563E92DFB1E4A1A0948A9D30DB8DE4A"
+    }
+  ]
+}
