@@ -88,7 +88,7 @@ if __name__ == '__main__':
     TlimParams= [ np.empty(shape=0)]
     PressExceededParams=[ np.empty(shape=0)]
     IntegrationErrorParams=[np.empty(shape=0)]
-
+    exitValueL = 0
     #
     # make directories where final results are stored
     #
@@ -127,24 +127,6 @@ if __name__ == '__main__':
     #
     # Make directory structure for code execution
     #
-    make_work_area(workDir,code_src_dir,Risultati,Parameters)
-    #
-    # prepare compile and execute
-    #
-    exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
-    
-    if exitValueL == -200:
-        print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
-        print 'Parameters: ', Parameters['data']
-        exit(-200)
-    #
-    # Archive results
-    #
-    archive_exoplanet_data(Parameters, workDir,RisultatiMultipli,LogFiles,Risultati)
-    #
-    # 
-    #
-
     try:
         make_work_area(workDir,code_src_dir,Risultati,Parameters)
     except:
@@ -179,6 +161,6 @@ if __name__ == '__main__':
             pass
 
 
-    print exitValueL
+    print ("Exit Value: %d" % exitValueL)
 
 

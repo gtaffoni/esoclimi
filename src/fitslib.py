@@ -74,6 +74,6 @@ def create_FITS(in_file,out_file,param_file):
 
     thdulist = pyfits.HDUList([prihdu, tbhdu])
 
-    thdulist.writeto(out_file,clobber=True)
+    thdulist.writeto(out_file)
 
     return date
