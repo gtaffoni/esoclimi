@@ -137,8 +137,6 @@ def collect_results(_data, cmf, sf, rgf, pef, ief, ucf, n):
         with open(ucf, "a") as tmp_file:
             tmp_file.write(results)
         n[4] += 1
-    print _data[2]
-    print n
     return n
 
 def merge_files(f1,f2):
@@ -223,6 +221,7 @@ if __name__ == '__main__':
     Risultati         = "Risultati"
     Broken            = "Broken"
     Src               = "Src"
+    runs              = "Runs"
     #
     # Non convergin models
     #
@@ -240,9 +239,10 @@ if __name__ == '__main__':
     IntegrationErrorParams=[np.empty(shape=0)]
     #
     # open a logger (one each task==rank)
+    logging_file_name=workDir+"/run_"+str(rank)+".log"
     logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(message)s',
-                    filename=workDir+"/run_"+str(rank)+".log",
+                    filename=logging_file_name,
                     filemode='w')
 
     #########################################
@@ -430,7 +430,8 @@ if __name__ == '__main__':
 ## END and close inputfile
 #
         infile.close()
-        write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
+        if not os.stat(restart_file).st_size == 0:
+            write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
                             snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
                             press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
                             nonconverging_file, uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
@@ -462,7 +463,7 @@ if __name__ == '__main__':
                 tag = status.Get_tag()
                 logging.info("Receive message %s on worker %d from  0"  % (tag,rank))
                 if tag == tags.START:
-                    logging.debug("START %d,0: begin computation" % (rank))
+                    logging.debug("START on rank %d, local sim %d: begin computation" % (rank,local_simulation_index))
                     
                     Parameters = make_input_parameters(inputdata,Parameters)
                     ######################################################
@@ -476,14 +477,12 @@ if __name__ == '__main__':
                     except:
                         logging.error(sys.exc_info()[0])
                         exitValueL = 256
-                        print ("inside %d - %d" % (exitValueL,rank))
                         pass
-                    print ("outside %d - %d" % (exitValueL,rank))
                     #
                     # prepare compile and execute
                     #
                     if not exitValueL == 256:
-                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
+                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
     
                     if exitValueL == -200:
                         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
@@ -513,7 +512,7 @@ if __name__ == '__main__':
                     comm.send(inputdata, dest=0, tag=tags.DONE)
                     logging.debug("START %d,0: data sent" % (rank))
                 elif tag == tags.EXIT:
-                    logging.info("EXIT from simulation %d"  % (rank))
+                    logging.info("EXIT and Break from simulation %d"  % (rank))
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
                     break
             else:
@@ -521,6 +520,7 @@ if __name__ == '__main__':
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
                 if tag == tags.START:
+                    logging.debug("START on rank %d, local sim %d: begin computation" % (rank,local_simulation_index))
                     Parameters = make_input_parameters(inputdata,Parameters)
                     ######################################################
                     # prepare, compile and execute code, store results   #
@@ -536,7 +536,7 @@ if __name__ == '__main__':
                         pass
                     #
                     if not exitValueL == 256:
-                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
+                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
                     
                     if exitValueL == -200:
                         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
@@ -565,7 +565,8 @@ if __name__ == '__main__':
                     inputdata.append(exitValueL)
                     comm.send(inputdata, dest=0, tag=tags.DONE)
                 elif tag == tags.EXIT:
+                    logging.info("EXIT and break from simulation %d"  % (rank))
                     comm.send(None, dest=0, tag=tags.EXIT)
                     break
-
+        logging.info("Rank %d ends" % (rank))
 

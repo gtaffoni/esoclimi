@@ -137,7 +137,7 @@ if __name__ == '__main__':
 # prepare compile and execute
 #
     if not exitValueL == 256:
-        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
             
     if exitValueL == -200:
         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'

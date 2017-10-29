@@ -65,6 +65,8 @@ def make_work_area (_workDir,_code_root_dir,Risultati,Parameters):
     except:
         logging.error(sys.exc_info()[0])
         raise
+    with open(localSrc+"/"+Risultati+"/Parameters.txt", "w") as text_file:
+        text_file.write(Parameters['data'])
     try:
         shutil.copytree(template_dir+"/CCM_RH60", localSrc+"/CCM_RH60")
     except:
