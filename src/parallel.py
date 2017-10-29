@@ -482,7 +482,12 @@ if __name__ == '__main__':
                     # prepare compile and execute
                     #
                     if not exitValueL == 256:
-                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                        try:
+                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                        except:
+                            logging.error(sys.exc_info()[0])
+                            exitValueL = 256
+                            pass
     
                     if exitValueL == -200:
                         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
@@ -536,7 +541,13 @@ if __name__ == '__main__':
                         pass
                     #
                     if not exitValueL == 256:
-                        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                        try:
+                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                        except:
+                            logging.error(sys.exc_info()[0])
+                            exitValueL = 256
+                            pass
+
                     
                     if exitValueL == -200:
                         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'

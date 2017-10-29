@@ -108,8 +108,8 @@ if __name__ == '__main__':
     #########################################
     # Begin                                 #
     #########################################
-    #data="0.01 0.0 23.43929 0.8 0 0.1"   # integration error (exit -100)
-    data="0.018 0.1 23.439 1.5 1.0 0.3"  # Snowball converged (exit 3)
+    data="0.01 0.0 23.43929 0.8 0 0.1"   # integration error (exit -100)
+    #data="0.018 0.1 23.439 1.5 1.0 0.3"  # Snowball converged (exit 3)
     #data="0.017783 0.6 23.439290 1.0 4 0.70" # warm-hot (exit 2)
     #data="0.017783 0.00 30.00 0.9 0 0.70" # warm (exit 1)
     #data="0.017783 0.70 30.0 0.8 0 0.70" # Runaway GreenHouse (exit -1)
@@ -137,8 +137,13 @@ if __name__ == '__main__':
 # prepare compile and execute
 #
     if not exitValueL == 256:
-        exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
-            
+        try:
+            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+        except:
+            logging.error(sys.exc_info()[0])
+            exitValueL = 256
+            pass
+
     if exitValueL == -200:
         print 'WARNING, CATASTROPHIC EXIT VALUE FOUND, ELABORATION STOPPED'
         print 'Parameters: ', Parameters['data']

@@ -272,10 +272,18 @@ def compileEBM(runDir,logfile):
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
-    p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
-    # p is the return code of Make so we can make some check
+    try:
+        p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+        # p is the return code of Make so we can make some check
+    except subprocess.CalledProcessError as e:
+        logging.debug("CompileEBM: %s" % e.output)
+        raise
+    except OSError:
+        logging.error("CompileEBM: execution error")
+        print ("CompileEBM: %s" % e.output)
+        raise
     os.chdir(origin)
-
+    return p
 
 def runEBM(runDir,logfile):
     import subprocess
@@ -283,6 +291,12 @@ def runEBM(runDir,logfile):
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
-    p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+    try:
+        p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+        print p
+    except:
+        logging.error("RunEBM: execution error")
+        raise
     os.chdir(origin)
+    return p
 

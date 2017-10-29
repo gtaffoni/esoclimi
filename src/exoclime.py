@@ -175,16 +175,23 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     # TODO: non riesce: deve uscire con errore 2
     str="Compile EBM %s %s" % (Parameters['version'],Parameters['simtype'])
     logging.info("Simulation %d => %s",Parameters['number'], str)
-    compileEBM(localSrcDir,EBM_Code_log_file)
-    
+    try:
+        exiterror=compileEBM(localSrcDir,EBM_Code_log_file)
+    except:
+        logging.error(sys.exc_info()[0])
+        raise
+    if not exiterror == 0:
+        raise ValueError('Compilation Error')
     #############################
     # running EBM               #
     #############################
-    # TODO: non riesce: deve uscire con errore 3
     str="Run EBM %s %s" % (Parameters['version'],Parameters['simtype'])
     logging.info("Simulation %d => %s",Parameters['number'], str)
-    runEBM(localSrcDir,EBM_Code_log_file)
-    
+    try:
+        exiterror=runEBM(localSrcDir,EBM_Code_log_file)
+    except:
+        logging.error(sys.exc_info()[0])
+        raise
     ########################################################
     #calculating atmospheric thickness (Michele Maris code)#
     ########################################################
@@ -314,7 +321,7 @@ def archive_broken_simulations(Parameters, _workDir, Broken):
     
     localWorkDir    = "%s/%d/" % (_workDir,Parameters['number'])
     
-    results_location="%s/Broken%s_%s"%(workDir+"/"+Broken,results_string,str(uuid.uuid1()))
+    results_location="%s/Broken%s_%s"%(_workDir+"/"+Broken,results_string,str(uuid.uuid1()))
     logging.debug("Simulation %d => Archive broken results to: %s",Parameters['number'], results_location)
     #
     # check if dir exists eventually remove (this is unlikely to  happen UUID)
@@ -326,5 +333,7 @@ def archive_broken_simulations(Parameters, _workDir, Broken):
         shutil.move(localWorkDir,results_location)
     except:
         raise
+    print localWorkDir
+    os.chdir(_workDir)
     return
 
