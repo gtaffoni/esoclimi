@@ -57,7 +57,8 @@ def make_work_area (_workDir,_code_root_dir,Risultati,Parameters):
     template_dir=_code_root_dir+"/Templates/"
     localSrc = _dir+"/"+Src
     localResults=localSrc+"/"+Risultati
-    logging.info("Simulation %d => Begin create Local work directory: %s",Parameters['number'], _dir)
+    logging.info("Simulation %d => Begin create Local work directories: %s",Parameters['number'], _dir)
+    logging.debug("Simulation %d => Create Local Src: %s",Parameters['number'], localSrc)
     if os.path.isdir(localSrc):
         shutil.rmtree(localSrc)
     try:
@@ -65,27 +66,34 @@ def make_work_area (_workDir,_code_root_dir,Risultati,Parameters):
     except:
         logging.error(sys.exc_info()[0])
         raise
+    logging.debug("Simulation %d => Create Parameters.txt file",Parameters['number'])
     with open(localSrc+"/"+Risultati+"/Parameters.txt", "w") as text_file:
         text_file.write(Parameters['data'])
+    logging.debug("Simulation %d => Copy CCM_RH60",Parameters['number'])
     try:
         shutil.copytree(template_dir+"/CCM_RH60", localSrc+"/CCM_RH60")
     except:
         logging.error(sys.exc_info()[0])
         raise
-
+    logging.debug("Simulation %d => Copy ModulesDef",Parameters['number'])
     copyall(template_dir+"/ModulesDef", localSrc) # they are all empty files ????
+    logging.debug("Simulation %d => Copy Std",Parameters['number'])
     copyall(template_dir+"/Std",localSrc)
-
     if Parameters['simtype']=="VegPassive":
+        logging.debug("Simulation %d => Copy VegPassive",Parameters['number'])
         copyall(template_dir+"/VegPassive",localSrc)
         copyall(template_dir+"/VegPassive/Modules/",localSrc)
     elif Parameters['simtype']=="VegAlbedoFB":
+        logging.debug("Simulation %d => Copy VegAlbedoFB",Parameters['number'])
         copyall(template_dir+"/VegAlbedoFB", localSrc)
         copyall(template_dir+"/VegAlbedoFB/Modules/",localSrc)
     # varying pressure on an EARTH-LIKE planet, using EARTH template
+    logging.debug("Simulation %d => Copy Planets .h",Parameters['number'])
     shutil.copy(template_dir+"/Planets/"+Parameters['planet']+".h", localSrc+"/planet.h")
     if Parameters['planet'] == "EARTH":
+        logging.debug("Simulation %d => Copy fo_earth_DMAP.dat for EARTH",Parameters['number'])
         shutil.copy(template_dir+"/Planets/fo_earth_DMAP.dat",localSrc+"/fo_earth_DMAP.dat")
+    logging.info("Simulation %d => End create Local work directories: ErrorCode=%d",Parameters['number'],errorcode)
     return errorcode
 
 def emulation(Parameters):
@@ -178,10 +186,12 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     try:
         exiterror=compileEBM(localSrcDir,EBM_Code_log_file)
     except:
-        logging.error(sys.exc_info()[0])
+        logging.error("Simulation %d => compile error %s", sys.exc_info()[0])
         raise
     if not exiterror == 0:
+        logging.debug("Simulation %d => compile error %s", sys.exc_info()[0])
         raise ValueError('Compilation Error')
+
     #############################
     # running EBM               #
     #############################
@@ -190,7 +200,7 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     try:
         exiterror=runEBM(localSrcDir,EBM_Code_log_file)
     except:
-        logging.error(sys.exc_info()[0])
+        logging.error("Simulation %d => RUN error %s", Parameters['number'], sys.exc_info()[0])
         raise
     ########################################################
     #calculating atmospheric thickness (Michele Maris code)#
@@ -317,7 +327,7 @@ def archive_broken_simulations(Parameters, _workDir, Broken):
     import uuid
     
     # TODO: this string should be fixed when more params are needed
-    results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'])
+    results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f_%d"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'],Parameters['number'])
     
     localWorkDir    = "%s/%d/" % (_workDir,Parameters['number'])
     

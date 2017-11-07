@@ -149,9 +149,9 @@ if __name__ == '__main__':
         print 'Parameters: ', Parameters['data']
         comm.free()
         exit(-200)
-                    #
-                    # Archive results
-                    #
+    #
+    # Archive results
+    #
     if exitValueL == 256:
         try:
             archive_broken_simulations(Parameters, workDir, Broken)

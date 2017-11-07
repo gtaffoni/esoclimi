@@ -466,26 +466,28 @@ if __name__ == '__main__':
                     logging.debug("START on rank %d, local sim %d: begin computation" % (rank,local_simulation_index))
                     
                     Parameters = make_input_parameters(inputdata,Parameters)
+                    logging.debug("Simulations %d => Check exitValueL=%d" % (Parameters['number'] ,exitValueL))
                     ######################################################
                     # prepare, compile and execute code, store results   #
                     #
                     #
                     # Make directory structure for code execution
                     #
-                    try:
-                        make_work_area(workDir,code_src_dir,Risultati,Parameters)
-                    except:
-                        logging.error(sys.exc_info()[0])
-                        exitValueL = 256
-                        pass
+                    #try:
+                    make_work_area(workDir,code_src_dir,Risultati,Parameters)
+                        #except:
+                        #logging.error("Make work area: %s" % sys.exc_info()[0])
+                        #exitValueL = 256
+                        #pass
                     #
                     # prepare compile and execute
                     #
                     if not exitValueL == 256:
                         try:
+                            logging.debug("Simulation %d => Run exoplates",Parameters['number'] )
                             exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
                         except:
-                            logging.error(sys.exc_info()[0])
+                            logging.error("Exoclime %s" % sys.exc_info()[0])
                             exitValueL = 256
                             pass
     
@@ -499,15 +501,17 @@ if __name__ == '__main__':
                     #
                     if exitValueL == 256:
                         try:
+                            logging.debug("Simulation %d => Archive Broken",Parameters['number'] )
                             archive_broken_simulations(Parameters, workDir, Broken)
                         except:
-                            logging.error("unable to archive broken simulations: %s",sys.exc_info()[0])
+                            logging.error("Unable to archive broken simulations: %s",sys.exc_info()[0])
                             pass
                     else:
                         try:
+                            logging.debug("Simulation %d => Archive data",Parameters['number'] )
                             archive_exoplanet_data(Parameters, workDir,RisultatiMultipli,LogFiles,Risultati)
                         except:
-                            logging.error("unable to archive  simulations: %s",sys.exc_info()[0])
+                            logging.error("Unable to archive  simulations: %s",sys.exc_info()[0])
                             pass
                     logging.debug("START %d,0: End computation, ExitValue %d" % (rank,exitValueL))
                     # END                                               #
@@ -515,36 +519,40 @@ if __name__ == '__main__':
                     #sending back results:
                     inputdata.append(exitValueL)
                     comm.send(inputdata, dest=0, tag=tags.DONE)
-                    logging.debug("START %d,0: data sent" % (rank))
+                    logging.debug("START %d,0: Data sent to Master" % (rank))
                 elif tag == tags.EXIT:
                     logging.info("EXIT and Break from simulation %d"  % (rank))
                     comm.send(None, dest=0, tag=tags.EXIT) # chiudi task mpi e esci
                     break
             else:
                 local_simulation_index += 1
+                exitValueL = 0
                 inputdata = comm.recv(source=0, tag=MPI.ANY_TAG, status=status)
                 tag = status.Get_tag()
                 if tag == tags.START:
                     logging.debug("START on rank %d, local sim %d: begin computation" % (rank,local_simulation_index))
                     Parameters = make_input_parameters(inputdata,Parameters)
+                    logging.debug("Simulation %d => Check exitValueL=%d" % (Parameters['number'] ,exitValueL))
+
                     ######################################################
                     # prepare, compile and execute code, store results   #
                     #
                     #
                     # Make directory structure for code execution
                     #
-                    try:
-                        make_work_area(workDir,code_src_dir,Risultati,Parameters)
-                    except:
-                        logging.error(sys.exc_info()[0])
-                        exitValueL = 256
-                        pass
+                    #try:
+                    make_work_area(workDir,code_src_dir,Risultati,Parameters)
+                        #except:
+                        #logging.error("Make work area: %s" % sys.exc_info()[0])
+                        #exitValueL = 256
+                        #pass
                     #
                     if not exitValueL == 256:
                         try:
+                            logging.debug("Simulation %d => Run exoplates",Parameters['number'] )
                             exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
                         except:
-                            logging.error(sys.exc_info()[0])
+                            logging.error("Exoclime %s" % sys.exc_info()[0])
                             exitValueL = 256
                             pass
 
@@ -559,12 +567,14 @@ if __name__ == '__main__':
                     #
                     if exitValueL == 256:
                         try:
+                            logging.debug("Simulation %d => Archive Broken",Parameters['number'] )
                             archive_broken_simulations(Parameters, workDir, Broken)
                         except:
                             logging.error("unable to archive broken simulations: %s",sys.exc_info()[0])
                             pass
                     else:
                         try:
+                            logging.debug("Simulation %d => Archive data",Parameters['number'] )
                             archive_exoplanet_data(Parameters, workDir,RisultatiMultipli,LogFiles,Risultati)
                         except:
                             logging.error("unable to archive  simulations: %s",sys.exc_info()[0])
