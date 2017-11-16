@@ -149,4 +149,65 @@ class atmosphereGeometry :
       self.MassDepth_Relative_Contribution=np.concatenate([[0.],2*np.pi*((self.r[1:]-self.r[:-1])*(y[1:]+y[:-1])/2.).cumsum()])/self.MassDepth
       return self.MassDepth
 
-     
+class MixtureOneGasScaling :
+   """this class handles scaling of atmosphere gas properties PM, Cp, Cv and gamma,
+      when the amount of a single component gas is changed.
+   """
+   def __init__(self,Mixture_gas,Component_gas,P_REF) :
+      """ initializes the object with a given 
+         Mixture (gas object), 
+         Component_gas to be changed (gas object),
+         its reference abbundance in the mixture (float,ppmv)
+         
+         It is assumed that in gas, Molecular Weigth is expressed in gr/mole, Cp and Cm in J/Kg/K
+         """
+      import copy
+      #
+      self.mixture=copy.deepcopy(Mixture_gas)
+      self.mixture.cpm=self.mixture.cp*(self.mixture.MolecularWeight*1e-3)
+      self.mixture.cv=self.mixture.cp/self.mixture.gamma
+      self.mixture.cvm=self.mixture.cp/self.mixture.gamma*(self.mixture.MolecularWeight*1e-3)
+      #
+      self.gas=copy.deepcopy(Component_gas)
+      self.gas.cpm=self.gas.cp*(self.gas.MolecularWeight*1e-3)
+      self.gas.cv=self.gas.cp/self.gas.gamma
+      self.gas.cvm=self.gas.cp/self.gas.gamma*(self.gas.MolecularWeight*1e-3)
+      #
+      self.P_REF=P_REF
+      self.molar_fraction_ref=P_REF/1e6
+      #
+   def scaleEq(self,MixValue,ComponentValue) :
+      """ Scaling equaition for an extensive quantity
+          Accepts in input: 
+            The value of the quantity in the mix: MixValue
+            The value of the quantity for the component gas: ComponentValue
+            
+         If X := MixValue and C := ComponentValue then the rescaled X' is
+         
+         X' = (X+C*(alpha-1)*f)/(1+(alpha-1)*f)
+         
+         where f is the molar fraction of the rescaled component gas in the original mixture
+         alpha 
+      """
+      return (MixValue+ComponentValue*(self.ALPHA-1)*self.molar_fraction_ref)/(1+(self.ALPHA-1)*self.molar_fraction_ref)
+   def __call__(self,P_NEW,nargout=1) :
+      """ performs the scaling for a given gas mixture and new required abbundance P_NEW
+      """
+      import copy
+      #
+      # K the ratio of abbundances in the final and original mixture
+      self.K=P_NEW/self.P_REF
+      #
+      # alpha the ratios in number of molecules
+      self.ALPHA=(1-self.molar_fraction_ref)*self.K/(1-self.molar_fraction_ref*self.K)
+      #
+      out=copy.deepcopy(self.mixture)
+      out.MolecularWeight=self.scaleEq(self.mixture.MolecularWeight,self.gas.MolecularWeight)
+      out.cpm=self.scaleEq(self.mixture.cpm,self.gas.cpm)
+      out.cvm=self.scaleEq(self.mixture.cvm,self.gas.cvm)
+      #
+      out.gamma=out.cpm/out.cvm
+      out.cp=out.cpm/(out.MolecularWeight*1e-3)
+      out.cv=out.cvm/(out.MolecularWeight*1e-3)
+      #
+      return out

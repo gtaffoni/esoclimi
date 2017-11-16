@@ -922,9 +922,8 @@ c  the .fits file from the run. The above python script also need year_lat_temp_
       write(28,'("SIMTYPE!",A,"!type of run!STR")') SIMTYPE 
       write(28,
      >'("PAPER1!Vladilo+2015,ApJ,804,50!Reference paper (model)!STR")')
-      bfr='("PAPER2
-     >!Silva+2016,Int.J.Astrobiology,pp.1-22 doi:10.1017/S1473550416000215"
-     >!Ref. paper (habitability)!STR")'
+      bfr='("PAPER2!Silva+2016,Int.J.Astrobiology,pp.1-22 doi:10.1017/S1
+     >473550416000215"!Ref. paper (habitability)!STR")'
       write(28,bfr)      
       write(28,'("PRJNAME!EXOCLIMATES!project name!STR")')
       write(28,'("COMMENT!! The planet geography expressed in 
