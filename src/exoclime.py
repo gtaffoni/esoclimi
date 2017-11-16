@@ -186,9 +186,11 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     try:
         exiterror=compileEBM(localSrcDir,EBM_Code_log_file)
     except:
+        print("Simulation %d => compile error %s", sys.exc_info()[0])
         logging.error("Simulation %d => compile error %s", sys.exc_info()[0])
         raise
     if not exiterror == 0:
+        print("Simulation %d => compile errors %s", sys.exc_info()[0])
         logging.debug("Simulation %d => compile error %s", sys.exc_info()[0])
         raise ValueError('Compilation Error')
 
@@ -206,6 +208,7 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     #calculating atmospheric thickness (Michele Maris code)#
     ########################################################
     # TODO: Change with Mechele help
+    #       Check if parfile exists
     try:
         logging.info("Simulation %d => Starting atmospheric thickness code.", Parameters['number'])
         tAtmo(localResultDir+fits_param_file, code_work_dir, EBM_Code_log_file)
@@ -343,7 +346,6 @@ def archive_broken_simulations(Parameters, _workDir, Broken):
         shutil.move(localWorkDir,results_location)
     except:
         raise
-    print localWorkDir
     os.chdir(_workDir)
     return
 

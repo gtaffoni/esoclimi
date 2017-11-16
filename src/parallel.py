@@ -386,7 +386,7 @@ if __name__ == '__main__':
                     logging.info("tags.DONE Master stop file found: closing the simulation.")
                     break
                 if time() - starttime > stop_time:
-                    logging.info("Stopping (time limit exceeded) and writing restart file ")
+                    logging.info("Stopping time limit exceeded ")
                     break
                 simulation_index += 1
 # TODO increment also nsnoball, nrunaway, npressure, nintegration????
@@ -401,6 +401,8 @@ if __name__ == '__main__':
             data = comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
             source = status.Get_source()
             tag = status.Get_tag()
+            logging.info("Closed worker number: %d (worker=%d)" % (closed_workers,source))
+
             if tag == tags.READY: # Should not happen unless total simulations < numer_of_workers
                 logging.info("Closing tag.READY: close worker %d" % source)
                 comm.send(None, dest=source, tag=tags.EXIT)
@@ -421,9 +423,9 @@ if __name__ == '__main__':
                                         nonconverging_file, uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
                     oldtime = time()
             elif tag == tags.EXIT: # Collect extit reply from workers
-                logging.info("Closing tag.EXIT Worker %d exited." % source)
+                logging.info("Closing tag.EXIT Worker %d exited (n_closed=%d)." % (source,closed_workers))
                 closed_workers+=1
-                print("exit %d"% source)
+#                print("exit %d"% source)
 
 
 #

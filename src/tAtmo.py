@@ -37,7 +37,6 @@ def tAtmo(exop_par_file_name, workdir, logfile):
    import time
    import shutil
    import numpy as np
-   from matplotlib import pyplot as plt
    
    from atmosphereLib import MoistAdiabat as PhysMoistAdiabat
    from atmosphereLib import Rstar as Rstar
