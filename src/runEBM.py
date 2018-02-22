@@ -270,9 +270,14 @@ def compileEBM(runDir,logfile):
     #from posix import system
     import subprocess
     import os
+    from random import randint
+    from time import sleep
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
+    rand_tmp=randint(1,30)
+    logging.debug("CompileEBM: rand,  %d" % rand_tmp )
+    sleep(rand_tmp)
     try:
         logging.debug("CompileEBM: starting")
         p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
