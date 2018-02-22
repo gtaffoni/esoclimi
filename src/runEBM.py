@@ -14,6 +14,7 @@
     _dir == location of the source files to setup and compile
     
 """
+import logging
 
 def setupEBM(parameters,_dir):
 # REMEMBER TO ADD CALCULUS OF PLANET MASS AND CHANGE BELOW
@@ -272,20 +273,18 @@ def compileEBM(runDir,logfile):
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
-    print ("CompileEBM")
     try:
+        logging.debug("CompileEBM: starting")
         p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
         # p is the return code of Make so we can make some check
-        print ("CompileEBM DONE %d"% p)
+        logging.debug("CompileEBM: end,  %d" % p )
     except subprocess.CalledProcessError as e:
         logging.debug("CompileEBM: %s" % e.output)
         raise
     except OSError:
         logging.error("CompileEBM: execution error")
-        print ("CompileEBM: %s" % e.output)
         raise
     os.chdir(origin)
-    print ("CompileEBM DONE")
     return p
 
 def runEBM(runDir,logfile):
@@ -295,7 +294,9 @@ def runEBM(runDir,logfile):
     # move to the proper directory
     os.chdir(runDir)
     try:
+        logging.debug("RunEBM: starting...")
         p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+        logging.debug("RunEBM: end, %d" % p)
     except:
         logging.error("RunEBM: execution error")
         raise

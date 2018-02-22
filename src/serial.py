@@ -20,7 +20,7 @@ import numpy as np
 import time
 from exoclime import *
 import ConfigParser
-
+#from runEBM import *
 
 Parameters = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 

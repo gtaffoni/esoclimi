@@ -370,8 +370,6 @@ if __name__ == '__main__':
                                                    tmp_press_exceeded_file, tmp_integration_error_file,tmp_uncompleted_file,
                                                    N_non_converging)
                 logging.info("tags.DONE Got data from worker %d: %d, %s, %d" % (source,data[0],data[1],simulation_index))
-                logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
-                comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
             #
             #       CHECK IF IT IS NECESSARY TO MAKE A CHECKPOINT
             #
@@ -384,10 +382,17 @@ if __name__ == '__main__':
                     oldtime = time()
                 if os.path.isfile(stop_file):
                     logging.info("tags.DONE Master stop file found: closing the simulation.")
+                    comm.send(None, dest=source, tag=tags.EXIT)
                     break
                 if time() - starttime > stop_time:
                     logging.info("Stopping time limit exceeded ")
+                    comm.send(None, dest=source, tag=tags.EXIT)
                     break
+            #
+            #    RUN NEW SIMULATION
+            #
+                logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
+                comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 simulation_index += 1
 # TODO increment also nsnoball, nrunaway, npressure, nintegration????
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
