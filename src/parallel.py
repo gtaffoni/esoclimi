@@ -267,24 +267,26 @@ if __name__ == '__main__':
         press_exceeded_file = workDir+"/"+config.get("Results", "PressExceeded File")
         integration_error_file = workDir+"/"+config.get("Results", "IntegrationError File")
         #
-        running_input=workDir+'/input.%s.dat' % os.getpid() #better with tmp files
+        running_input=workDir+'/input.%s.dat' % os.getpid() # TODO: use tmp random files
         #
-        tmp_snowball_file = snowball_file+"_tmp"
+        tmp_snowball_file = snowball_file+"_tmp" # TODO: use tmp random files ( maybe hidden)
         open(tmp_snowball_file, 'w').close()
         #
-        tmp_runaway_greenhouse_file = runaway_greenhouse_file+"_tmp"
+        tmp_runaway_greenhouse_file = runaway_greenhouse_file+"_tmp" # TODO: use tmp random files ( maybe hidden)
         open(tmp_runaway_greenhouse_file, 'w').close()
         #
-        tmp_press_exceeded_file = press_exceeded_file+"_tmp"
+        tmp_press_exceeded_file = press_exceeded_file+"_tmp" # TODO: use tmp random files ( maybe hidden)
         open(tmp_press_exceeded_file, 'w').close()
         #
-        tmp_integration_error_file = integration_error_file+"_tmp"
+        tmp_integration_error_file = integration_error_file+"_tmp" # TODO: use tmp random files ( maybe hidden)
         open(tmp_integration_error_file, 'w').close()
         #
-        tmp_computed_models_file = computed_models_file+"_tmp" #better with tmp files
+        tmp_computed_models_file = computed_models_file+"_tmp"  # TODO: use tmp random files ( maybe hidden)
         open(tmp_computed_models_file, 'w').close()
         #
-        tmp_running_input=running_input+"_tmp"  # maybe it is redundant but avoid to copy an open file at checkpoint
+        # DEBUG: maybe it is redundant but avoid to copy an open file at checkpoint
+        tmp_running_input=running_input+"_tmp"  # TODO: use tmp random files ( maybe hidden)
+        
         open(tmp_running_input, 'w').close()
         #
         tmp_uncompleted_file = uncompleted_file+"_tmp"
@@ -292,10 +294,11 @@ if __name__ == '__main__':
         #
         starttime= time()
         oldtime = starttime
-        simulation_index = 0    #qui ci puo' essere un problema di sovrascrittura files??"
+        simulation_index = 0    # TODO: verify if there is a problem at  re-start from restart file in case of uncomplpted runs
         num_workers = size - 1
         num_computed = 0
         closed_workers = 0
+        #
         create_directory_structure = False
         output = ConfigParser.ConfigParser() # to write and read results
         #
@@ -303,9 +306,9 @@ if __name__ == '__main__':
         #
         if not (os.path.isfile(computed_models_file)):
             with open(computed_models_file, "w") as tmp_file:
-                tmp_file.write("# type, p, ecc, obl, dist\n")
+                tmp_file.write("# type, p, ecc, obl, dist, gg, fo_const\n") # NOTE: to update when adding parameters
         #
-        #   Open  restart file and update simulation index (this could be slow, is it necessary?)
+        #   Open  restart file if there is one and read simulation index, and other counters from output file
         #
         try:
             fd = os.open(restart_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -321,7 +324,7 @@ if __name__ == '__main__':
                 N_non_converging[3]=int(output.get("Divergent Models","Integration error"))
                 N_non_converging[4]=int(output.get("Uncompleted Models","Number"))
             #
-            #  TODO add others snoball runaway etc.
+            #  TODO add others if update the output etc.
             #
 
             else:
@@ -332,14 +335,13 @@ if __name__ == '__main__':
             shutil.copy(input_filename,restart_file)
             make_output_file_data_structure(output_filename)
             create_directory_structure = True
-        # ???output.read(output_filename) # open output data file
-        
-        
+
         try:
             infile = open(running_input,"r")
         except IOError:
             print "Cannont open Input File"
-            exit() ##### verify if it exists a proper way to close MPI
+            MPI.Comm.Abort()
+            exit()
 
 
         logging.info("Master starting with %d workers" % num_workers)
@@ -415,22 +417,19 @@ if __name__ == '__main__':
                 N_non_converging = collect_results(data, tmp_computed_models_file, tmp_snowball_file,tmp_runaway_greenhouse_file,
                                                     tmp_press_exceeded_file, tmp_integration_error_file, tmp_uncompleted_file,
                                                     N_non_converging)
-                logging.info("Closing tag.DONE: Got data from worker %d with %d" % (source, data[0]))
+                logging.info("Closing ==> tag.DONE: Got data from worker %d with %d" % (source, data[0]))
                 comm.send(None, dest=source, tag=tags.EXIT)
-                #
-                #       CHECK IF IT IS NECESSARY TO MAKE A CHECKPOINT
-                #
-                if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
-                    logging.info("tags.DONE Master Write restart file")
-                    write_restart_files(simulation_index,input_filename,restart_file,computed_models_file,tmp_computed_models_file,
-                                        snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
-                                        press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
-                                        nonconverging_file, uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
-                    oldtime = time()
-            elif tag == tags.EXIT: # Collect extit reply from workers
+            elif tag == tags.EXIT: # Collect exit reply from workers
                 logging.info("Closing tag.EXIT Worker %d exited (n_closed=%d)." % (source,closed_workers))
                 closed_workers+=1
-#                print("exit %d"% source)
+                logging.info("Closing tags.EXIT Master Write restart file")
+                #
+                #       MAKE A CHECKPOINT EACH TIME WE FINISH a JOB
+                #
+                write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
+                                    snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
+                                    press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
+                                    nonconverging_file,  uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
 
 
 #
@@ -597,4 +596,6 @@ if __name__ == '__main__':
                     comm.send(None, dest=0, tag=tags.EXIT)
                     break
         logging.info("Rank %d ends" % (rank))
+
+    MPI.finalize()
 
