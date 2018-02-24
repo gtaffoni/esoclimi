@@ -36,17 +36,17 @@ def enum(*sequential, **named):
     return type('Enum', (), enums)
 
 
-def write_restart_files(sim_index,input,restart,computed,tmp_computed,snowball, tmp_snowball, runaway, tmp_runaway, pressure, tmp_pressure, integration, tmp_integration, nonconverging_file, uncompleted, tmp_uncompleted, n,out):
+def write_intermediate_results(sim_index,input,computed,tmp_computed,snowball, tmp_snowball, runaway, tmp_runaway, pressure, tmp_pressure, integration, tmp_integration, nonconverging_file, uncompleted, tmp_uncompleted, n,out):
     '''
                write a restart file  and consolidate the outputs
                n = non converginf array
         '''
     
     #
-    # Backup. Necessary in case of crash
+    # Backup: Necessary in case of crash.
     #
-    shutil.copyfile(restart,restart+".bak")
     shutil.copyfile(computed,computed+".bak")
+    shutil.copyfile(out,out+".bak")
     #
     # Update computed models file with data in temporary_computed (the computed file of actual run)
     #
@@ -74,10 +74,9 @@ def write_restart_files(sim_index,input,restart,computed,tmp_computed,snowball, 
     #   nTlim  (run) => n1
     #   nPressExceeded => n2
     #   nIntegrationError =>  n3
-    shutil.copyfile(out,out+".bak")
     o = ConfigParser.SafeConfigParser()
     o.read(out)
-    o.set("Main program","Simulation index",str(sim_index+1))
+    o.set("Main program","Simulation index",str(sim_index))
     o.set("Divergent Models","Snowball",str(n[1]))
     o.set("Divergent Models","Runaway greenhouse",str(n[0]))
     o.set("Divergent Models","Pressure execeded",str(n[2]))
@@ -85,20 +84,11 @@ def write_restart_files(sim_index,input,restart,computed,tmp_computed,snowball, 
     o.set("Uncompleted Models","Number",str(n[4]))
     with open(out, 'wb') as configfile:
         o.write(configfile)
-    #
-    # update restart file
-    #
-    file1=open(input)
-    file2=open(computed)
-    file3=open(restart,"w")
-    diff = difflib.ndiff(file1.readlines(), file2.readlines())
-    delta = ''.join(x[2:] for x in diff if x.startswith('- '))
-    file3.write(delta)
-    file3.close()
-    file2.close()
-    file1.close()
     return
 
+#(data, tmp_computed_models_file, tmp_snowball_file,tmp_runaway_greenhouse_file,
+# tmp_press_exceeded_file, tmp_integration_error_file,tmp_uncompleted_file,
+# N_non_converging)
 
 def collect_results(_data, cmf, sf, rgf, pef, ief, ucf, n):
     '''
@@ -108,8 +98,8 @@ def collect_results(_data, cmf, sf, rgf, pef, ief, ucf, n):
     #
     # Computed models file
     #
-    with open(cmf, "a") as tmp_file:  # save data on computed model on temporary data
-            tmp_file.write(results)
+    with open(cmf, "a") as tmp_file:
+        tmp_file.write(results)
     #
     # Divergence File
     #
@@ -117,6 +107,7 @@ def collect_results(_data, cmf, sf, rgf, pef, ief, ucf, n):
     #   nTlim (snow)      => 1
     #   nPressExceeded    => 2
     #   nIntegrationError => 3
+    #   nUncompleted      => 4
     if np.abs(_data[2] + 100) < 0.001 :   # Integration Error
         with open(ief, "a") as tmp_file:
             tmp_file.write(results)
@@ -138,6 +129,29 @@ def collect_results(_data, cmf, sf, rgf, pef, ief, ucf, n):
             tmp_file.write(results)
         n[4] += 1
     return n
+
+def write_restart_file(_input,_computed,_restart):
+    file1=open(_computed)
+    file2=open(_input)
+    file3=open(_restart,"w")
+    # Read lines from files
+    lines1 = file1.read().strip().splitlines()
+    lines2 = file2.read().strip().splitlines()
+    diff = difflib.unified_diff(lines1, lines2, fromfile='file1', tofile='file2', lineterm='', n=0)
+    lines = list(diff)[2:]
+    added   = [line[1:] for line in lines if line[0] == '+']
+    removed = [line[1:] for line in lines if line[0] == '-']
+
+    number_of_models_to_compute=0
+    for line in added:
+        if line not in removed:
+            file3.writelines(line + "\n")
+            number_of_models_to_compute += 1
+    if  number_of_models_to_compute != (len(lines2)- len(lines1)):
+        return number_of_models_to_compute
+    if  number_of_models_to_compute == 0:
+        return 0
+    return 1
 
 def merge_files(f1,f2):
     '''
@@ -231,12 +245,6 @@ if __name__ == '__main__':
     #   nPressExceeded    => 2
     #   nIntegrationError => 3
     #   uncompleted (256) => 4
-    #parameter values for non-converged models
-    #
-    SigmaCritParams=[ np.empty(shape=0) ]
-    TlimParams= [ np.empty(shape=0)]
-    PressExceededParams=[ np.empty(shape=0)]
-    IntegrationErrorParams=[np.empty(shape=0)]
     #
     # open a logger (one each task==rank)
     logging_file_name=workDir+"/run_"+str(rank)+".log"
@@ -294,7 +302,7 @@ if __name__ == '__main__':
         #
         starttime= time()
         oldtime = starttime
-        simulation_index = 0    # TODO: verify if there is a problem at  re-start from restart file in case of uncomplpted runs
+        simulation_index = 0
         num_workers = size - 1
         num_computed = 0
         closed_workers = 0
@@ -304,29 +312,35 @@ if __name__ == '__main__':
         #
         #   Open file with computed models and append header only if file does not exists.
         #
-        if not (os.path.isfile(computed_models_file)):
-            with open(computed_models_file, "w") as tmp_file:
-                tmp_file.write("# type, p, ecc, obl, dist, gg, fo_const\n") # NOTE: to update when adding parameters
+        #if not (os.path.isfile(computed_models_file)):
+        #    with open(computed_models_file, "w") as tmp_file:
+        #        tmp_file.write("# type, p, ecc, obl, dist, gg, fo_const\n") # NOTE: to update when adding parameters
         #
-        #   Open  restart file if there is one and read simulation index, and other counters from output file
+        #   Open  executed model file if there is one, create restart file and read simulation index, and other counters from output file
         #
         try:
-            fd = os.open(restart_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            fd = os.open(computed_models_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except OSError, e:
-            if e.errno == 17:
-                shutil.copy(restart_file,running_input)
-                shutil.copy(restart_file,tmp_running_input)
-                output.read(output_filename)
-                simulation_index = int(output.get("Main program", "simulation index"))
-                N_non_converging[0]=int(output.get("Divergent Models","Snowball"))
-                N_non_converging[1]=int(output.get("Divergent Models","Runaway greenhouse"))
-                N_non_converging[2]=int(output.get("Divergent Models","Pressure execeded"))
-                N_non_converging[3]=int(output.get("Divergent Models","Integration error"))
-                N_non_converging[4]=int(output.get("Uncompleted Models","Number"))
-            #
-            #  TODO add others if update the output etc.
-            #
-
+            if e.errno == 17: #EXISTS
+                write_restart_file_err = write_restart_file(input_filename, computed_models_file,restart_file)
+                if write_restart_file_err == 1:
+                    shutil.copy(restart_file,running_input)
+                    shutil.copy(restart_file,tmp_running_input)
+                    output.read(output_filename)
+                    simulation_index = int(output.get("Main program", "simulation index"))
+                    N_non_converging[0]=int(output.get("Divergent Models","Snowball"))
+                    N_non_converging[1]=int(output.get("Divergent Models","Runaway greenhouse"))
+                    N_non_converging[2]=int(output.get("Divergent Models","Pressure execeded"))
+                    N_non_converging[3]=int(output.get("Divergent Models","Integration error"))
+                    N_non_converging[4]=int(output.get("Uncompleted Models","Number"))
+                elif write_restart_file_err == 0 :
+                    print "WARNING: Execution completed, no more model to evaluate"
+                    MPI.Comm.Abort()
+                    exit()
+                else:
+                    print "ERROR: Cannot Create Restart file"
+                    MPI.Comm.Abort()
+                    exit()
             else:
                 raise
         else:
@@ -344,7 +358,7 @@ if __name__ == '__main__':
             exit()
 
 
-        logging.info("Master starting with %d workers" % num_workers)
+        logging.info("Master starting with %d workers from simulation number %d" % (num_workers, simulation_index))
         print ("Master starting with %d workers from simulation number %d" % (num_workers, simulation_index))
         if create_directory_structure :
         #
@@ -364,20 +378,24 @@ if __name__ == '__main__':
             source = status.Get_source()
             tag = status.Get_tag()
             if tag == tags.READY: # Only at first loop
-                comm.send([simulation_index,line], dest=source, tag=tags.START)
                 logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
+                comm.send([simulation_index,line], dest=source, tag=tags.START)
                 simulation_index += 1
             elif tag == tags.DONE:
                 N_non_converging = collect_results(data, tmp_computed_models_file, tmp_snowball_file,tmp_runaway_greenhouse_file,
                                                    tmp_press_exceeded_file, tmp_integration_error_file,tmp_uncompleted_file,
                                                    N_non_converging)
-                logging.info("tags.DONE Got data from worker %d: %d, %s, %d" % (source,data[0],data[1],simulation_index))
+                logging.info("tags.DONE Got data from worker %d. Simulation index: %d" % (source,data[0]))
+                logging.debug("tags.DONE Got data from worker %d. Simulation index: %d, input: %s, err value: %d" % (source,data[0],data[1],data[2]))
             #
             #       CHECK IF IT IS NECESSARY TO MAKE A CHECKPOINT
             #
                 if time() - oldtime > restart_interval or simulation_index%n_of_runs_before_restart==0:
                     logging.info("tags.DONE Master Write restart file")
-                    write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
+                    #
+                    # WARNING: simulation index is always greater than the number of completed runs of a factor num_workers-1.
+                    #
+                    write_intermediate_results(simulation_index-(num_workers-1), input_filename, computed_models_file,tmp_computed_models_file,
                                         snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
                                         press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
                                         nonconverging_file,  uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
@@ -396,7 +414,6 @@ if __name__ == '__main__':
                 logging.info("tags.READY Sending simulation %d to worker %d" % (simulation_index, source))
                 comm.send([simulation_index,line], dest=source, tag=tags.START) #send new data to worker
                 simulation_index += 1
-# TODO increment also nsnoball, nrunaway, npressure, nintegration????
             elif tag == tags.EXIT: # ERROR: we should not be here!!!!
                 logging.error(" tags.EXIT Worker %d exited." % source)
                 closed_workers+=1
@@ -411,45 +428,51 @@ if __name__ == '__main__':
             logging.info("Closed worker number: %d (worker=%d)" % (closed_workers,source))
 
             if tag == tags.READY: # Should not happen unless total simulations < numer_of_workers
-                logging.info("Closing tag.READY: close worker %d" % source)
+                logging.info("Closing ==> tag.READY: close worker %d" % source)
                 comm.send(None, dest=source, tag=tags.EXIT)
             elif tag == tags.DONE: # collect results from running workers and ask to exit
                 N_non_converging = collect_results(data, tmp_computed_models_file, tmp_snowball_file,tmp_runaway_greenhouse_file,
                                                     tmp_press_exceeded_file, tmp_integration_error_file, tmp_uncompleted_file,
                                                     N_non_converging)
-                logging.info("Closing ==> tag.DONE: Got data from worker %d with %d" % (source, data[0]))
+                #
+                # MAKE A CHECKPOINT EACH TIME WE FINISH a TASK
+                #
+                write_intermediate_results(simulation_index, input_filename, computed_models_file,tmp_computed_models_file,
+                           snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
+                           press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
+                           nonconverging_file,  uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
+                logging.info("Closing ==> tag.DONE: Got data from worker %d. Simulation index: %d" % (source, data[0]))
                 comm.send(None, dest=source, tag=tags.EXIT)
             elif tag == tags.EXIT: # Collect exit reply from workers
-                logging.info("Closing tag.EXIT Worker %d exited (n_closed=%d)." % (source,closed_workers))
+                logging.info("Closing ==> tag.EXIT Worker %d exited (n_closed=%d)." % (source,closed_workers))
                 closed_workers+=1
-                logging.info("Closing tags.EXIT Master Write restart file")
-                #
-                #       MAKE A CHECKPOINT EACH TIME WE FINISH a JOB
-                #
-                write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
-                                    snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
-                                    press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
-                                    nonconverging_file,  uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
-
+                logging.info("Closing ==> tags.EXIT Master Write restart file")
 
 #
 ## END and close inputfile
 #
         infile.close()
-        if not os.stat(restart_file).st_size == 0:
-            write_restart_files(simulation_index, input_filename,restart_file,computed_models_file,tmp_computed_models_file,
+        #
+        # Check if we need to write final  data: paranoid check
+        #
+        tmp_computed_models_file_index=0
+        with open(tmp_computed_models_file) as tmp_computed_models_file_fd:
+            for line in tmp_computed_models_file_fd:
+                tmp_computed_models_file_index += 1
+        if tmp_computed_models_file_index != 0:
+            logging.info("Closing: Master Write  %d results  to files",tmp_computed_models_file_index)
+            write_intermediate_results(simulation_index, input_filename, computed_models_file,tmp_computed_models_file,
                             snowball_file, tmp_snowball_file, runaway_greenhouse_file, tmp_runaway_greenhouse_file,
                             press_exceeded_file, tmp_press_exceeded_file, integration_error_file, tmp_integration_error_file,
                             nonconverging_file, uncompleted_file, tmp_uncompleted_file, N_non_converging,output_filename)
         #
-        # Write output data
+        # Print results
         #
-        
         print 'nSigmaCrit (Runaway Greenhouse), nTlim (Snowball), nPressExceeded (out of range), nIntegrationError (stepsize too small): ', N_non_converging[0],  N_non_converging[1], N_non_converging[2], N_non_converging[3]
-        print 'Fractions: ', 1.0*N_non_converging[0]/simulation_index, 1.0*N_non_converging[1]/simulation_index, 1.0*N_non_converging[2]/(simulation_index+1), 1.0*N_non_converging[3]/(simulation_index+1)
+        print 'Fractions: ', 1.0*N_non_converging[0]/simulation_index, 1.0*N_non_converging[1]/simulation_index, 1.0*N_non_converging[2]/(simulation_index), 1.0*N_non_converging[3]/(simulation_index)
         print '\n Overall number and fraction of non-converged inhabitable cases: ', sum(N_non_converging), 1.0* sum(N_non_converging) / (simulation_index+1)
         print '\n Number of uncompleted runs: ', N_non_converging[4]
-        print '\n Total number of runs: ',simulation_index+1
+        print '\n Total number of runs: ',simulation_index
 
 
 
@@ -479,19 +502,19 @@ if __name__ == '__main__':
                     #
                     # Make directory structure for code execution
                     #
-                    #try:
-                    make_work_area(workDir,code_src_dir,Risultati,Parameters)
-                        #except:
-                        #logging.error("Make work area: %s" % sys.exc_info()[0])
-                        #exitValueL = 256
-                        #pass
+                    try:
+                        make_work_area(workDir,code_src_dir,Risultati,Parameters)
+                    except:
+                        logging.error("Make work area: %s" % sys.exc_info()[0])
+                        exitValueL = 256
+                        pass
                     #
                     # prepare compile and execute
                     #
                     if not exitValueL == 256:
                         try:
                             logging.debug("Simulation %d => Run exoplates",Parameters['number'] )
-                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
                         except:
                             logging.error("Exoclime %s" % sys.exc_info()[0])
                             exitValueL = 256
@@ -506,15 +529,15 @@ if __name__ == '__main__':
                     # Archive results
                     #
                     if exitValueL == 256:
+                        logging.debug("Simulation %d => Archive Broken",Parameters['number'] )
                         try:
-                            logging.debug("Simulation %d => Archive Broken",Parameters['number'] )
                             archive_broken_simulations(Parameters, workDir, Broken)
                         except:
                             logging.error("Unable to archive broken simulations: %s",sys.exc_info()[0])
                             pass
                     else:
+                        logging.debug("Simulation %d => Archive data",Parameters['number'] )
                         try:
-                            logging.debug("Simulation %d => Archive data",Parameters['number'] )
                             archive_exoplanet_data(Parameters, workDir,RisultatiMultipli,LogFiles,Risultati)
                         except:
                             logging.error("Unable to archive  simulations: %s",sys.exc_info()[0])
@@ -546,17 +569,17 @@ if __name__ == '__main__':
                     #
                     # Make directory structure for code execution
                     #
-                    #try:
-                    make_work_area(workDir,code_src_dir,Risultati,Parameters)
-                        #except:
-                        #logging.error("Make work area: %s" % sys.exc_info()[0])
-                        #exitValueL = 256
-                        #pass
+                    try:
+                        make_work_area(workDir,code_src_dir,Risultati,Parameters)
+                    except:
+                        logging.error("Make work area: %s" % sys.exc_info()[0])
+                        exitValueL = 256
+                        pass
                     #
                     if not exitValueL == 256:
                         try:
                             logging.debug("Simulation %d => Run exoplates",Parameters['number'] )
-                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=False)
+                            exitValueL = exoclime(Parameters, workDir, code_src_dir, Risultati, emulate=True)
                         except:
                             logging.error("Exoclime %s" % sys.exc_info()[0])
                             exitValueL = 256
@@ -597,5 +620,5 @@ if __name__ == '__main__':
                     break
         logging.info("Rank %d ends" % (rank))
 
-    MPI.finalize()
+    MPI.Finalize()
 
