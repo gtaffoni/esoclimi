@@ -31,22 +31,18 @@ def make_input_parameters(_data,parameters):
         Convert input from rank 0 into set of parametes
         WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
         '''
-    #
-    #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
-    #
-    input_params=np.fromstring(_data[1], dtype=float, sep=' ')
-    parameters['p_CO2_P']           = 380   #CO2 partial pressure IN PPVM
-    parameters['CO2_Earth_ratio']   = 1.0  #the same, in Earth ratio (for output)
-    parameters['TOAalbfile']        = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
-    parameters['OLRfile']           = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
+    input_params=np.fromstring(_data[1],  sep=' ')
+    parameters['TOAalbfile']        = 'CCM_RH60/' + ''.join(_data[1].split()[-2:-1])
+    parameters['OLRfile']           = 'CCM_RH60/' + ''.join(_data[1].split()[-1:])
+    parameters['p_CO2_P']           = input_params[7]   #CO2 partial pressure IN PPVM
+    parameters['CO2_Earth_ratio']   = input_params[6]   #the same, in Earth ratio (for output)
+    parameters['fo_const']          = input_params[5]
+    parameters['gg']                = input_params[4]
     parameters['dist']              = input_params[3]    # semi-major axis of planet orbit
     parameters['obl']               = input_params[2]     # planet axis inclination
     parameters['ecc']               = input_params[1]     # eccentricity of planet orbit
     parameters['p']                 = input_params[0]       # pressure
     parameters['number']            = _data[0]
-    # new parameters
-    parameters['gg']                = input_params[4]
-    parameters['fo_const']          = input_params[5]
     parameters['data']              = _data[1]
     return(parameters)
 
@@ -108,12 +104,16 @@ if __name__ == '__main__':
     #########################################
     # Begin                                 #
     #########################################
-    #data="0.01 0.0 23.43929 0.8 0 0.1"   # integration error (exit -100)
-    data="0.018 0.1 23.439 1.5 1.0 0.3"  # Snowball converged (exit 3)
-    #data="0.017783 0.6 23.439290 1.0 4 0.70" # warm-hot (exit 2)
-    #data="0.017783 0.00 30.00 0.9 0 0.70" # warm (exit 1)
-    #data="0.017783 0.70 30.0 0.8 0 0.70" # Runaway GreenHouse (exit -1)
-    #data="0.01 0.8 0.0 0.8 0 0.10" # pressure exceeded (exit -2)
+    #
+    # input data format:
+    # p ecc obl dist gg fo_const CO2_Earth_ratio p_CO2_P OLRfile (only name not dir) TOAalbfile (only name not dir)
+    #
+    data="0.01 0.0 23.43929 0.8 0 0.1 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt"   # integration error (exit -100)
+    #data="0.018 0.1 23.439 1.5 1.0 0.3 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Snowball converged (exit 3)
+    #data="0.017783 0.6 23.439290 1.0 4 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm-hot (exit 2)
+    #data="0.017783 0.00 30.00 0.9 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm (exit 1)
+    #data="0.017783 0.70 30.0 0.8 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Runaway GreenHouse (exit -1)
+    #data="0.01 0.8 0.0 0.8 0 0.10 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # pressure exceeded (exit -2)
     
     simulation_index=1
     inputdata=[simulation_index,data]
