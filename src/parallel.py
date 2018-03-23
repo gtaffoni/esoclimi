@@ -187,22 +187,23 @@ def make_input_parameters(_data,parameters):
         Convert input from rank 0 into set of parametes
         WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
         '''
-    #
-    #   WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
-    #
-    input_params=np.fromstring(_data[1], dtype=float, sep=' ')
-    parameters['p_CO2_P']           = 380   #CO2 partial pressure IN PPVM
-    parameters['CO2_Earth_ratio']   = 1.0  #the same, in Earth ratio (for output)
-    parameters['TOAalbfile']        = 'CCM_RH60/ALB_g1_rh60_co2x10.txt'
-    parameters['OLRfile']           = 'CCM_RH60/OLR_g1_rh60_co2x10.txt'
+def make_input_parameters(_data,parameters):
+    '''
+        Convert input from rank 0 into set of parametes
+        WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
+        '''
+    input_params=np.fromstring(_data[1],  sep=' ')
+    parameters['TOAalbfile']        = 'CCM_RH60/' + ''.join(_data[1].split()[-2:-1])
+    parameters['OLRfile']           = 'CCM_RH60/' + ''.join(_data[1].split()[-1:])
+    parameters['p_CO2_P']           = input_params[7]   #CO2 partial pressure IN PPVM
+    parameters['CO2_Earth_ratio']   = input_params[6]   #the same, in Earth ratio (for output)
+    parameters['fo_const']          = input_params[5]
+    parameters['gg']                = input_params[4]
     parameters['dist']              = input_params[3]    # semi-major axis of planet orbit
     parameters['obl']               = input_params[2]     # planet axis inclination
     parameters['ecc']               = input_params[1]     # eccentricity of planet orbit
     parameters['p']                 = input_params[0]       # pressure
     parameters['number']            = _data[0]
-    # new parameters
-    parameters['gg']                = input_params[4]
-    parameters['fo_const']          = input_params[5]
     parameters['data']              = _data[1]
     return(parameters)
 
