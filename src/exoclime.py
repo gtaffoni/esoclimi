@@ -291,14 +291,13 @@ def archive_exoplanet_data(Parameters, workDir,RisultatiMultipli,LogFiles,Risult
     '''
         Archiving data from execution
         '''
-    # TODO: this string should be fixed when more params are needed
-    results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'])
+    results_string="_"+Parameters['data'].replace(" ", "_")
+    #results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'])
     
     localWorkDir    = "%s/%d/" % (workDir,Parameters['number'])
     localSrcDir     = "%s%s/" % (localWorkDir,Src)
     localResultDir = "%s%s/" % (localSrcDir,Risultati)
-    
-    results_location="%s/Risultati%s"%(workDir+"/"+RisultatiMultipli,results_string)
+    results_location="%s/%s/Risultati%s"%(workDir,RisultatiMultipli,results_string)
     logging.debug("Simulation %d => Archive results to: %s",Parameters['number'], results_location)
     #
     # check if dir exists eventually remove (this may happen in case of restart from crash)
@@ -328,9 +327,8 @@ def archive_broken_simulations(Parameters, _workDir, Broken):
         Archiving data from execution
         '''
     import uuid
-    
-    # TODO: this string should be fixed when more params are needed
-    results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f_%d"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'],Parameters['number'])
+    results_string="_"+Parameters['data'].replace(" ", "_")
+    #results_string="_Press%5.3f_Ecc%4.2f_Dist%3.1f_Obl%5.3f_CO2_%5.3f_GG%d_fo%4.2f_%d"%(Parameters['p'],Parameters['ecc'],Parameters['dist'],Parameters['obl'],Parameters['CO2_Earth_ratio'],Parameters['gg'],Parameters['fo_const'],Parameters['number'])
     
     localWorkDir    = "%s/%d/" % (_workDir,Parameters['number'])
     

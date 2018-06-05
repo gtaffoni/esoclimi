@@ -21,6 +21,7 @@
 		9087E3661F4D773A00E2C855 /* tAtmo.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = tAtmo.py; path = src/tAtmo.py; sourceTree = "<group>"; };
 		9087E3671F4D773A00E2C855 /* K452b.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = K452b.py; path = src/K452b.py; sourceTree = "<group>"; };
 		9087E3681F4D773A00E2C855 /* EARTH.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = EARTH.py; path = src/EARTH.py; sourceTree = "<group>"; };
+		908F134620C748CF0069095E /* oofits.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; name = oofits.py; path = ../Tests/oofits.py; sourceTree = "<group>"; };
 		90CCD1651E9E2D0B00A72106 /* thumblib.py */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.script.python; name = thumblib.py; path = src/thumblib.py; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -28,6 +29,7 @@
 		90740CCD1E8D3C9500EC1C36 = {
 			isa = PBXGroup;
 			children = (
+				908F134620C748CF0069095E /* oofits.py */,
 				907A81B91F965754002ED5B0 /* file.py */,
 				900783361F8CF5C900757D6D /* Script.py */,
 				900783331F8CF4B100757D6D /* Config.ini */,

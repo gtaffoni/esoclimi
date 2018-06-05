@@ -319,6 +319,13 @@ if __name__ == '__main__':
         #
         #   Open  executed model file if there is one, create restart file and read simulation index, and other counters from output file
         #
+        if os.path.isfile(stop_file):
+            print "WARNING: I found a stop file, I assume that either"
+            print "the execution is completed (no more model to evaluate) or"
+            print ("the stop file %s has been created by the user" % stop_file)
+            comm.Abort()
+            exit(0)
+                
         try:
             fd = os.open(computed_models_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
         except OSError, e:
@@ -336,11 +343,12 @@ if __name__ == '__main__':
                     N_non_converging[4]=int(output.get("Uncompleted Models","Number"))
                 elif write_restart_file_err == 0 :
                     print "WARNING: Execution completed, no more model to evaluate"
-                    MPI.Comm.Abort()
-                    exit()
+                    open(stop_file, 'a').close()
+                    comm.Abort()
+                    exit(0)
                 else:
                     print "ERROR: Cannot Create Restart file"
-                    MPI.Comm.Abort()
+                    comm.Abort()
                     exit()
             else:
                 raise
@@ -355,8 +363,8 @@ if __name__ == '__main__':
             infile = open(running_input,"r")
         except IOError:
             print "Cannont open Input File"
-            MPI.Comm.Abort()
-            exit()
+            comm.Abort(1)
+            exit(0)
 
 
         logging.info("Master starting with %d workers from simulation number %d" % (num_workers, simulation_index))
