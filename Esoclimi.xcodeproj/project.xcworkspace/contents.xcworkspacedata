@@ -2,6 +2,9 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "self:Esoclimi.xcodeproj">
+      location = "group:../src/fitspngout.py">
+   </FileRef>
+   <FileRef
+      location = "self:">
    </FileRef>
 </Workspace>

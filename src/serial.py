@@ -113,9 +113,9 @@ if __name__ == '__main__':
     #
     #data="0.01 0.0 23.43929 0.8 0 0.1 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt"   # integration error (exit -100)
     #data="0.018 0.1 23.439 1.5 1.0 0.3 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Snowball converged (exit 3)
-    #data="0.017783 0.6 23.439290 1.0 4 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm-hot (exit 2)
+    data="0.017783 0.6 23.439290 1.0 4 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm-hot (exit 2)
     #data="0.017783 0.00 30.00 0.9 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm (exit 1)
-    data="0.017783 0.70 30.0 0.8 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Runaway GreenHouse (exit -1)
+    #data="0.017783 0.70 30.0 0.8 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Runaway GreenHouse (exit -1)
     #data="0.01 0.8 0.0 0.8 0 0.10 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # pressure exceeded (exit -2)
     
     simulation_index=1
@@ -153,6 +153,7 @@ if __name__ == '__main__':
         print 'Parameters: ', Parameters['data']
         comm.free()
         exit(-200)
+    exit(1)
     #
     # Archive results
     #

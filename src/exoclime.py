@@ -35,8 +35,9 @@ Src               = "Src"           #TIENI
 
 ##############################################################################
 # program imports
-from fitslib import create_FITS
-from thumblib import create_THUMBNAILS
+import fitspngout as createfiles
+#from fitslib import create_FITS
+#from thumblib import create_THUMBNAILS
 from workarea import *
 from runEBM import *
 from tAtmo import *
@@ -138,8 +139,8 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
         check the status
         '''
     # INITIALIZE SOME VARIABLES
-    fits_out_base = workDir+"/Database/ESTM1.1.01-"     # base name of the FITs output
-    thumbs_out_base = workDir+"/Thumbnails/ESTM1.1.01-" # base name of the FITs output
+    fits_dir = workDir+"/Database/"     # base name of the FITs output
+    thumbs_dir = workDir+"/Thumbnails/" # base name of the FITs output
     fits_param_file = "/esopianeti.par"
     fortran_run_result="year_lat_temp_last1.tlt"        # Data File name
     fortran_value_result="/valori.txt"
@@ -222,19 +223,33 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
     # Run completed       Making .fits file (REQUIRES PYFIT)#
     #########################################################
     logging.info("Simulation %d => %s", Parameters['number'], "Create FITS file from data")
+    results_string="ESTM1.1.01-"+Parameters['data'].replace(" ", "_")
+    FITSPNG = createfiles.fitspngout(localResultDir+fortran_run_result,results_string,
+                                     localResultDir+fits_param_file)
     try:
-        date = create_FITS(localResultDir+fortran_run_result,fits_out_base,localResultDir+fits_param_file)
+        FITSPNG.write_fits_file()
     except:
         e = sys.exc_info()[0]
         logging.warning("Simulation %d => %s Cannot create FITS file",Parameters['number'],e)
         pass
     try:
-        create_THUMBNAILS(localResultDir+fortran_run_result,thumbs_out_base, date, Parameters['number'])
+        FITSPNG.write_png_file()
     except:
         e = sys.exc_info()[0]
         logging.warning("Simulation %d => %s Cannot create thumbnails",Parameters['number'],e)
         pass
-
+    try:
+        shutil.move(results_string+".fits", fits_dir)
+    except ValueError as e:
+        print(e.args)
+        err=256
+        pass
+    try:
+        shutil.move(results_string+".png", thumbs_dir)
+    except ValueError as e:
+        print(e.args)
+        err=256
+        pass
 
 ###########################################################################################
 # VERY IMPORTANT: CHECKING NON-CONVERGED SNOWBALL/RUNAWAY GREENHOUSE CASES
@@ -254,7 +269,7 @@ def exoclime(Parameters,workDir,code_work_dir,Risultati,emulate=False):
 #
 ###########################################################################################
 
-    fortran_value_result_file =localResultDir+fortran_value_result
+    fortran_value_result_file = localResultDir+fortran_value_result
     logging.info("Simulation %d => Open File fortran_value_result: %s", Parameters['number'], fortran_value_result_file)
     exitValue  = np.loadtxt(fortran_value_result_file)
     logging.info("Simulation %d => Fortran Code Exit Value: %d", Parameters['number'], exitValue[25])
