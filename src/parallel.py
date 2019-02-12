@@ -31,7 +31,8 @@ Parameters = {'simtype': "Std", 'version': "1.1.03", 'planet': "EARTH" }
 def enum(*sequential, **named):
     '''
         simple way to emulate enumerate in python taken from the web
-        '''
+        
+    '''
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type('Enum', (), enums)
 
@@ -40,7 +41,7 @@ def write_intermediate_results(sim_index,input,computed,tmp_computed,snowball, t
     '''
                write a restart file  and consolidate the outputs
                n = non converginf array
-        '''
+    '''
     
     #
     # Backup: Necessary in case of crash.
@@ -182,11 +183,11 @@ def make_output_file_data_structure(filename):
     del o
     return
 
-def make_input_parameters(_data,parameters):
-    '''
-        Convert input from rank 0 into set of parametes
-        WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
-        '''
+    #def make_input_parameters(_data,parameters):
+    #'''
+    #    Convert input from rank 0 into set of parametes
+    #    WARNING: TO BE MODIFIED WHEN CHANGING PARAMETERS SPACE EXPLORATION
+    #    '''
 def make_input_parameters(_data,parameters):
     '''
         Convert input from rank 0 into set of parametes

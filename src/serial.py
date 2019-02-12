@@ -38,13 +38,13 @@ def make_input_parameters(_data,parameters):
     parameters['TOAalbfile']        = 'CCM_RH60/' + ''.join(_data[1].split()[-2:-1])
     parameters['OLRfile']           = 'CCM_RH60/' + ''.join(_data[1].split()[-1:])
     parameters['p_CO2_P']           = input_params[7]   #CO2 partial pressure IN PPVM
-    parameters['CO2_Earth_ratio']   = input_params[6]   #the same, in Earth ratio (for output)
+    parameters['CO2_Earth_ratio']   = input_params[6]   #the same, in Earth ratio (for output) TODO: CALCOLIMOCELA!!!!!
     parameters['fo_const']          = input_params[5]
     parameters['gg']                = input_params[4]
     parameters['dist']              = input_params[3]    # semi-major axis of planet orbit
     parameters['obl']               = input_params[2]     # planet axis inclination
     parameters['ecc']               = input_params[1]     # eccentricity of planet orbit
-    parameters['p']                 = input_params[0]       # pressure
+    parameters['p']                 = input_params[0]       # pressure in EARTH units (atm)
     parameters['number']            = _data[0]
     parameters['data']              = _data[1]   #MJD YYYY-MM-DD (ISO)
     return(parameters)
@@ -113,8 +113,9 @@ if __name__ == '__main__':
     #
     #data="0.01 0.0 23.43929 0.8 0 0.1 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt"   # integration error (exit -100)
     #data="0.018 0.1 23.439 1.5 1.0 0.3 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Snowball converged (exit 3)
-    data="0.017783 0.6 23.439290 1.0 4 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm-hot (exit 2)
+    #data="0.017783 0.6 23.439290 1.0 4 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm-hot (exit 2)
     #data="0.017783 0.00 30.00 0.9 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # warm (exit 1)
+    data = "1 0.01671022 23.439290 1.0 4 0.70 1. 380 ALB_g1_rh60_co380_ch1.8.txt OLR_g1_rh60_co380_ch1.8.txt" # Terra!!! (exit 1)
     #data="0.017783 0.70 30.0 0.8 0 0.70 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # Runaway GreenHouse (exit -1)
     #data="0.01 0.8 0.0 0.8 0 0.10 1.0 380 ALB_g1_rh60_co2x10.txt OLR_g1_rh60_co2x10.txt" # pressure exceeded (exit -2)
     
@@ -157,6 +158,7 @@ if __name__ == '__main__':
     #
     # Archive results
     #
+    exit(0)
     if exitValueL == 256:
         try:
             archive_broken_simulations(Parameters, workDir, Broken)

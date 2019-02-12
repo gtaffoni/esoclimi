@@ -3,7 +3,7 @@ c general variable, vector and matrix definition
       real*8 df(N),fout(N)
       real*8 Htime(N), Harea(Ns)
       real*8 fyear, fhab, lathab, nonhab, hcxl
-      real*8 time,time0,tsum,tsum_old
+      real*8 time,time0,tsum,tsum_old,ddeltaT_old
       integer i,is,j,nmese,kl,ks
       real*8 LongS, tclx1, tclx2
       integer nok, nbad, nprompt, nout  
@@ -38,7 +38,7 @@ c general variable, vector and matrix definition
     
       real*8 ftme,ftmw,sigmaBoil,sigmaRG,sigmaCRIT
       real*8 sigmaLIM,exitFLAG,cmH2Olim,cmH2O
-      integer convergence,nlastorbits
+      integer convergence,nlastorbits,nconv
 
       integer nlatDMAP
       parameter(nlatDMAP=46)

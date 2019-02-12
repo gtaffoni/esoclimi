@@ -19,7 +19,7 @@
 	real*8 fo_const ! value of constant ocean fraction
         real*8 xmin, xmax
         real*8 Tstart  ! initial temperature 
-        real*8 h1, hmin, eps, deltaTconv
+        real*8 h1, hmin, eps, deltaTconv, ddeltaTconv
 	real*8 anglePN,PN,eoc0
 	real*8 omtilde,omgrande,meanL
 	real*8 omegaPERI,LSP
@@ -131,8 +131,11 @@ c       LATITUDE GRID
 	
 c       TIME INTEGRATION PARAMETERS
 	parameter(Ns=48)               ! number of data in one orbital period
-	parameter(maxNorbits=100)      ! max integration time (number of orbital periods)     
-	parameter(deltaTconv=1.0d-2)   ! simulation stops when annual global temperature converges within this accuracy
+*	parameter(maxNorbits=100)      ! max integration time (number of orbital periods)     
+	parameter(maxNorbits=1000)      ! max integration time (number of orbital periods)     
+	parameter(deltaTconv=1.0d-4)   ! simulation stops when DELTA(annual global temperature)/annual global temperature 
+*                                        converges within this accuracy
+	parameter(ddeltaTconv=1.d-4)   ! also the derivative of DeltaT/T is checked 
 	
 	parameter(h1 = 80000.0)
 	parameter(hmin=60.) 
@@ -140,7 +143,7 @@ c       TIME INTEGRATION PARAMETERS
 	
 c       PRINT OPTIONS	 
 	parameter(nouti=2)             ! numero di output in totale
-	parameter(nprompti=10)         ! numero di calcoli della temp media a schermo
+	parameter(nprompti=5)         ! numero di calcoli della temp media a schermo
 	parameter(idebug=0)            ! set 1 for print debugging 
 	
 c       TEMPERATURES 

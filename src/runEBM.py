@@ -51,8 +51,8 @@ def setupEBM(parameters,_dir):
                            # CCMcal00: OLR calibrated with CCM, WITHOUT correction factors
                            # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
 
-    p_CO2_P /= 10.
-    p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
+    p_CO2_P /= 10.        # p_CO2_p and p_CH4_E in imput are in PPMV
+    p_CH4_P=p_CH4_E/10.       # planet CH4 partial pressure [bar]
     press_E  = 101325.0 + p_CO2_P
     R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
     pmass    = 1.0 #planet mass in Earth masses

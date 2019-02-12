@@ -2,7 +2,7 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:../src/fitspngout.py">
+      location = "group:../src/Dune.py">
    </FileRef>
    <FileRef
       location = "self:">
