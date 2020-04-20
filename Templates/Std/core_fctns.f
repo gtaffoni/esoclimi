@@ -668,7 +668,7 @@ c        in this way we give time to the ice cover routine to make permanent ice
             endif
             
 c       mean planet temperature lower than half the minimum value  
-            if(Tmax.lt.Tlim1/0.5) then  
+            if(Tmax.lt.Tlim1) then  
                exitFLAG=-0.5
                write(*,9542) Tmax,Tlim1 
                return
