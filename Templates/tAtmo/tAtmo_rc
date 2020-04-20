@@ -1,0 +1,8 @@
+#configuration file for tAtmo.py
+
+# put overWriteParFile=True to force overwrite of the par file
+overWriteParFile=True
+
+# pressure at which to stop atmosphere integration in Pascal
+ptop=0.01
+

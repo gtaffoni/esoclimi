@@ -6,8 +6,13 @@ pi2=6.28318530717958647 # 2*pi (USED IN THE EBM CODE)
 pressE=1.01325e5   # [Pa] Earth surface pressure   1.01325 bar
 pressEdry=1.0031e5  # [Pa] Earth surface pressure minus pH2O at rh=0.5 and T=<T_surf,earth> 
                    # pH2O = rh x p_sat,w(T_m,E)  
+<<<<<<< HEAD
 p_CO2_E=3.8e2  # [Pa] Earth CO2 partial pressure  
 p_CH4_E=1.8e-1 # [Pa] Earth CH4 partial pressure  
+=======
+p_CO2_E=3.8e2  # [PPMV] Earth CO2 partial pressure   NOTE, in PPMV
+p_CH4_E=1.8    # [PPMV] Earth CH4 partial pressure   NOTE, in PPMV
+>>>>>>> EsoMPI
 cp_E=1.005e3   # [J/(kg K)] Earth air specific heat capacity at T=0 C
 molwtE=28.97   # Earth air mean molecular weight
  

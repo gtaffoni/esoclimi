@@ -1,0 +1,256 @@
+==================================================================
+     Parallel run readme
+
+   March 30th, 2017
+     	      	    Authors:
+		    Giuliano Taffoni
+		    Giuseppe Murante
+		
+		 contacts: taffoni@oats.inaf.it
+		           murante@oats.inaf.it
+
+                 readme version 0.1, 1/10/2017 GT/GM
+
+	       							
+==================================================================
+
+
+
+
+
+
+
+=======================================================================================
+	RUNNING THE CODE
+=======================================================================================
+
+ The parallel driver to use ESTM in HTC mode requires the following steps to be run.
+
+1. copy the code root to the directory where you are going to run it. The code root
+   includes two directories, src and Templates. Code is on github, EsoMPI branch
+
+2a.  -copy src/EsoMPIsetup.bash from in the code root.
+
+     -exec EsoMPIsetup; sintax is
+       ./EsoMPIsetup.bash WorkDir
+      the shell will copy all needed python source files in your WorkDir 
+      (can be different from the code root; must exist)
+      - in your WorkDir, edit the file coderoot.py and change the 
+      code_root_dir to the appropriate value. It is the string after the instruction
+      return in function coderoot(), trailing / is mandatory. MUST be a full path name.
+
+   OR
+
+2b. copy src/coderoot.py and sr/parallel.py in your WorkDir. 
+    Change  code_root_dir to the appropriate value. It is the string after the instruction
+    return in function coderoot(), trailing / is mandatory. MUST be a full path name.
+    parallel.py will do the job for you.
+
+3. put a file named input.txt in your WorkDir. This file contains all
+   the parameters on which the driver will cycle. In the current setup
+   it must have four columns:
+   press ecc incl sma
+
+   press: pressure IN UNITS OF EARTH ATMOSPHERIC PRESSURE
+   ecc: eccentricity
+   incl: rotation axis inclination (degrees)
+   sma: semi-major axis (in AU)
+
+   the file can contain as many lines as you want.
+   an example of input.txt creator is make_input.py in Templates/Documentation
+
+   DISCLAIMER: THE INPUT.TXT FILE WILL CHANGE WHILE WE ADD NEW PARAMETERS 
+
+   WARNING: note that if a file named restart.dat exists in the WorkDir, it will
+            be used instead of input.txt
+
+
+4. Verify that all needed python modules are installed on the system.
+   If not, you must create a virtual environment that includes them.
+   A shell example that does this for you is in Templates/Documentation
+   and is named make_virtualenv.bash
+   Requires virtualenv to exist. If not, contact your helpdesk. Python is needed
+   for the ESTM code :-)
+
+5. launch the code. a typical sintax could be:
+   mpirun -np 4 python ./parallel.py
+
+   Warning: the number of processor MUST be larger than 1, and smaller than
+   the number of cases (number of lines in input.txt)
+
+   If you have to use a queue manager, an example script is go_esoclimi
+   in Template/Documentation. Uses PBS. Uses the code root as the working
+   directory, a virtual environment (that must already have been set up).
+   
+
+6. During the execution:
+   - you can create an empty file named "stop". The code will stop.
+     (WARNING: untested)
+   - the code writes a restart file each 300 seconds. if the code
+     does not complete your list of cases, you can run it again, and it
+     will use the file "restart.dat" instead of input.txt to complete
+     your sample (see "Notes on restarts" below)
+   - the code will stop anyway after 6 hours (you can change this by
+     changing stop_time in parallel.py)
+   - a list of completed cases can be found in the file "executed_out.dat"
+
+   - you will find a number of dirs, named "0", "1".. "N" where N is the
+     number of required runs, in your WorkDir. 
+     They are work sub-directories in which each
+     core is executing ESTM separately. They are deleted after each ESTM
+     runs completes.  Under each dir, you will find Src, where all
+     the needed files to compile the instance of ESTM are; and Src/Risultati
+     where results are being written.
+
+   - you will have a number of files run_0.log, run_1.log, ... run_M.log.
+     These contain the logging of what each core is doing. They will remain
+     after the run is completed
+
+
+7. After the execution you will have the following results, in your WorkDir:
+      RisultatiMultipli  will contain the full ESTM results in one directory per 
+                         parameter set (its name is built from the used parameters)
+      LogFiles           will contain the full ESTM screen output
+      Database           will contain the FITS file of CONVERGED runs
+      Thumbnails         will contains png thumbnails of latitude/time/temperature
+                         plots during the last orbit, of CONVERGED runs
+   
+   Moreover, you sill find four files:
+
+    SnowBall-Params.dat , RunawayGreenhouse-Params.dat , PressExceeded-Params.dat , IntegrationError-Params.dat
+
+   They will contain the list of cases (one line per case containing the parameter set)
+   where the corresponding exception happened during the run.
+
+
+8. If you need to re-run the same case list in the same WorkDir, you'll have 
+    to delete all of the output directories. The shell "clean", in Templates/Documentation,
+    makes this for you. WARNING: your results will be lost.
+    IF some core working sub-directory has been left, you will have to delete them
+    by hands
+
+
+
+
+=======================================================================================
+	GENERAL PARALLEL STRUCTURE OF THE CODE
+=======================================================================================
+
+It's a typical master/slave code. Rank 0 is the master; you can have as many
+slaves as you want.
+
+The scheme is the following:
+
+MASTER:  
+  - executes the general setup (preparation of WorkDir,
+    copy of python source files etc)
+  - Collects a 'READY' mpi message from all slaves.
+  - Starts the workers, sending them one line of parameters
+    from the input file with a 'START' message. 
+  - If there are more workers then lines, fires the unneeded ones
+    sending them an 'EXIT' message
+
+  Here an endless loop stars. It:
+  - Sends a 'GO' message to all workers
+  - Waits a 'DONE' messages and send back a 'NCDS' request 
+    (non-converging data send)
+  - Upon receiving a 'NCD' message with the data:
+     * Updates the list of parameter that didn't converge
+     * Checks if more input lines are present:
+       - if YES, sends back a 'START' message with the new
+         input line
+       - if NO, exits the endless loop
+
+  Here a cycle on the number of (not-fired) workers begin:
+  - Waits for a 'DONE' message (workers are completing their 'START's).
+  - Sends a 'NCDS' request.
+  - Upon receiving an 'NCD' with data, updates non-converged parameter list
+  - Sends an 'EXIT' message
+  - Waits for an acknowledge (an 'EXIT' back)
+    Upon receiving it, the number of released worker is incremented
+  - When all workers are released, cycle ends
+
+  At this point, non-converged parameter lists and overall summary
+  are written on files and the code ends.
+
+SLAVES:
+  Start and endless loop
+  - First they send 'READY' to the master.
+  - Wait for a 'GO' message.
+  - Execute for the first time 'START' or 'EXIT'
+  - Send back a 'DONE' message when code finishes
+  - Receive an 'NCDS' request; send the non-converging
+    data to the master with an 'NCD' message
+  - They can get back another 'START' or an 'EXIT'
+     * if 'START', they  run code, send back 'DONE'
+       and the cycle is repeated
+     * if 'EXIT', they send back and 'EXIT' message and terminate.
+
+
+  During their 'START' tasks, workers make the following operations ( inside the function esoclimi() ):
+  - prepare the work area. A directory named after the simulation number
+    is created, files from Templates/Std are copied, a sub-dir named 'Risultati'
+    is created. All other needed files are copied
+  - compliles ESTM
+  - runs ESTM
+  - tries to run tAtmo (Michele's atmospheric thickness code)
+  - tries to produce FITS files (already in their Database dir)
+    and Thumbnails (aready in the corresponding dir)
+  - reads 'valori.txt' in Risultati, and sets up the appropriate 
+    non-converged parameter lists if needed
+  - archives Risultati in RisultatiMultipli at the WorkDir level
+  - the same for the log file
+  - returns the non-converged param list (can and hopefully be void!)
+
+   In EsoParallelFlow.pdf (Templates/Documentation) you have a schematic 
+   view of the communications.
+
+
+
+=======================================================================================
+	NOTES ON CHECKPOINTING/RESTARTING
+=======================================================================================
+
+ - A Restart point is created every restart_interval seconds (currently, 1800)
+   OR when a multiple of n_of_runs_before_restarting runs (currently, 1000) has
+   been completed
+
+ - two files are created: restart.dat and nonconverged.dat. The former contains
+   the cases to be run yet, the latter, all the non-converged data for the
+   runs completed. This one is read if a restart happens, and all the lists
+   containing the parameters that caused the non-convergence are loaded. This file
+   is overwritten each time a restart point is created, since it must alwais contain
+   the UPDATED non-converged dataset.
+
+ - when an emergency stop is required, a restart point is written before stopping
+
+ - when a cpu time limit is encountered, a restart point is also written.
+
+ - when the run is ended, a paranoid restart point is written, too
+   (this will consist of an empty restart.dat file and a nonconverged.dat with
+    the whole ordered list on non-converged parameters, ready to be loaded if
+    a "dummy" restart is done adding cases to restart.dat)
+
+
+
+=======================================================================================
+	DETAILED DESCRIPTION OF CODE FUNCTIONS
+=======================================================================================
+  ...Giuliano mi aiuti qui?
+
+
+
+=======================================================================================
+	BUGS AND TO-DO LIST
+=======================================================================================
+
+- Bugs: currently none is known
+
+- To do:
+     WE MUST ABSOLUTELY AUTHOMATIZE THE PARAMETER INPUT STUFF.
+     IN THE CURRENT CODE VERSION, ADDING OR CUTTING ONE PARAMETER
+     FROM THOSE ON WHICH WE MUST CYCLE REQUIRES A VERY HEAVY
+     CODE UPDATE.
+
+
+

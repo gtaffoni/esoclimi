@@ -1,0 +1,42 @@
+NAME !EARTHGEO !planet name!STR
+MSTAR!  0.19891000E+31!solar masses!F
+LUMSTAR!  0.38247196E+27!luminosity in solar units!F
+SMA!      1.00000000!semi-major axis [AU]!F
+ECC!      0.00000000!eccentricity!F
+OMEGAPER!    -77.06300354!argument of pericenter!F
+GRAV!      9.80000019!surface gravity [gEARTH=9.8 m/s**2]!F
+OBLIQ!     15.00000000!obliquity of planet rotation axis [deg]!F
+PROT!      1.00000000!planet rotation period [days]!F
+RPLAN!  0.63710000E+07!planet radius [R(earth)=6.371e6 m]!F
+GEO! 4!planet geography (ocean fract. in lat zones)!I
+FO_CONST!      0.69999999!const fraction of oceans!F
+PRESS!  0.30093000E+06!total dry pressure at planet surface [Pa]!F
+PN2!780840.0!N2 partial pressure [ppvm]!F
+PO2!209460.0!O2 partial pressure [ppvm]!F
+P_CO2! 380.0!CO2 partial pressure [ppvm]!F
+P_CH4! 1.8!CH4 partial pressure [ppvm]!F
+P_O3! 0.0!O3 partial pressure [ppvm]!F
+RH!      0.60000002!relative humidity!F
+TMGLOB!  0.30625826E+03!mean orbital globaltemperature!F
+HLW!      0.99933085!mean orbital global liquid-water habitability!F
+H050!      0.99933085!mean orbital globalcomplex-life habitability!F
+ALB!      0.32739248!mean orbital albedo!F
+CLOUDS!      0.67095324!mean orbital cloud covering!F
+NORBIT! 65!number of orbit before convergence!I
+CONTHAB! 0.996619 ! index of continuous liquid-water habitability!F
+DTEP! 3.898480e+01  !equator-pole temperature difference!F
+MOLR!  2.350590e+02  !mean OLR!F
+MASR!  0.000000e+00  !mean ASR!F
+ICE!  0.000000  !mean global ice coverage!F
+DATE!10022017!date of the run!STR
+NUMBER!0053!Ordered map number for the above date!I
+VERSION!1.1.03 !code version!STR
+SIMTYPE!Std        !type of run!STR
+PAPER1!Vladilo+2015,ApJ,804,50!Reference paper (model)!STR
+PAPER2                                                     !Silva+2016,Int.J.Astrobiology,pp.1-22 doi:10.1017/S14735504160002!Ref. paper (habitability)!STR
+PRJNAME!EXOCLIMATES!project name!STR
+COMMENT!! The planet geography expressed in           terms of
+COMMENT!! ocean fractions in each latitude zone
+COMMENT!! 0: constant freaction of oceans
+COMMENT!! 1: present Earth WK97; 2: equatorial cont.WK3: polar cont.WK97
+COMMENT!! 4: present Earth, file fo_earth_DMAP.dat

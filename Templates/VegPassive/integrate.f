@@ -153,7 +153,7 @@
 *      EXTERNAL derivs,rkqs
       PARAMETER (MAXSTP=100000,NMAX=500,KMAXX=2000,TINY=1.e-30)
       INTEGER i,kmax,kount,nstp
-      REAL*8 dxsavy,h,hdid,hnext,x,xsav,dydx(NMAX),xp(KMAXX),y(NMAX),
+      REAL*8 dxsav,h,hdid,hnext,x,xsav,dydx(NMAX),xp(KMAXX),y(NMAX),
      *yp(NMAX,KMAXX),yscal(NMAX)
       real*8 dzdx(NMAX), z(NMAX), zp(NMAX,KMAXX), zscal(NMAX)
       real*8 fo(nvar)
@@ -242,8 +242,14 @@ CU    USES derivs,rkck
       errmax=0.
       do 11 i=1,n
         errmax=max(errmax,abs(yerr(i)/yscal(i)) )
-        errmax=max(errmax,abs(zerr(i)/zscal(i)) )
-11    continue
+*   GM WARNING: these checks are needed for very small vegetations or vegetation changes
+*               that would result in ridicolously small values for h
+*               unfortunately even the last check is *needed*
+        if(zerr(i).gt.ztemp(i)*1.e-8 .and.
+     >       zscal(i).gt.ztemp(i)*1.e-8 .and. zerr(i).gt.1.e-12) then
+           errmax=max(errmax,abs(zerr(i)/zscal(i)) )
+        endif
+ 11     continue
       errmax=errmax/eps
       if(errmax.gt.1.)then
         h=SAFETY*h*(errmax**PSHRNK)
@@ -259,12 +265,21 @@ CU    USES derivs,rkck
         else
           hnext=5.*h
         endif
+
+
+        if( abs(hnext) <60.) then
+           do 1121  i=1,n
+              print *, ztemp(i),zerr(i), zscal(i)
+ 1121      continue
+           endif
+
+
         hdid=h
         x=x+h
         do 12 i=1,n
           y(i)=ytemp(i)
           z(i)=ztemp(i)
-12      continue
+ 12    continue
         return
       endif
       END
@@ -273,9 +288,9 @@ CU    USES derivs,rkck
       SUBROUTINE rkck(y,z,fo,dydx,dzdx,n,x,h,yout,yerr,zout,zerr)
       INTEGER n,NMAX
       REAL*8 h,x,dydx(n),y(n),yerr(n),yout(n), zerr(n),zout(n)
-      real*8 z(n),ztemp(n),dzdx(n)
+      real*8 z(n),ztemp(n),dzdx(n), TINY
 *      EXTERNAL derivs
-      PARAMETER (NMAX=500)
+      PARAMETER (NMAX=500, TINY=1.e-30)
 CU    USES derivs
       INTEGER i
       REAL*8 ak2(NMAX),ak3(NMAX),ak4(NMAX),ak5(NMAX),ak6(NMAX)
@@ -300,17 +315,26 @@ CU    USES derivs
       do 12 i=1,n
         ytemp(i)=y(i)+h*(B31*dydx(i)+B32*ak2(i))
         ztemp(i)=z(i)+h*(B31*dzdx(i)+B32*ak2z(i))
+        if(ztemp(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           ztemp(i)=0.0
+        endif
 12    continue
       call derivs(x+A3*h,fo,ytemp,ak3,ztemp,ak3z)
       do 13 i=1,n
         ytemp(i)=y(i)+h*(B41*dydx(i)+B42*ak2(i)+B43*ak3(i))
         ztemp(i)=z(i)+h*(B41*dzdx(i)+B42*ak2z(i)+B43*ak3z(i))
+        if(ztemp(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           ztemp(i)=0.0
+        endif
 13    continue
       call derivs(x+A4*h,fo,ytemp,ak4,ztemp,ak4z)
       do 14 i=1,n
         ytemp(i)=y(i)+h*(B51*dydx(i)+B52*ak2(i)+B53*ak3(i)+B54*ak4(i))
         ztemp(i)=z(i)+h*(B51*dzdx(i)+B52*ak2z(i)+B53*ak3z(i)+B54*
      >       ak4z(i))
+        if(ztemp(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           ztemp(i)=0.0
+        endif
 14    continue
       call derivs(x+A5*h,fo,ytemp,ak5,ztemp,ak5z)
       do 15 i=1,n
@@ -318,17 +342,26 @@ CU    USES derivs
      *B65*ak5(i))
         ztemp(i)=z(i)+h*(B61*dzdx(i)+B62*ak2z(i)+B63*ak3z(i)+B64*ak4z(i)
      *+B65*ak5z(i))
+        if(ztemp(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           ztemp(i)=0.0
+        endif
 15    continue
       call derivs(x+A6*h,fo,ytemp,ak6,ztemp,ak6z)
       do 16 i=1,n
         yout(i)=y(i)+h*(C1*dydx(i)+C3*ak3(i)+C4*ak4(i)+C6*ak6(i))
         zout(i)=z(i)+h*(C1*dzdx(i)+C3*ak3z(i)+C4*ak4z(i)+C6*ak6z(i))
+        if(zout(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           zout(i)=0.0
+        endif
 16    continue
       do 17 i=1,n
         yerr(i)=h*(DC1*dydx(i)+DC3*ak3(i)+DC4*ak4(i)+DC5*ak5(i)+DC6*
      *ak6(i))
         zerr(i)=h*(DC1*dzdx(i)+DC3*ak3z(i)+DC4*ak4z(i)+DC5*ak5z(i)+DC6*
      *ak6z(i))
+        if(zerr(i).le.TINY) then !WARNING, added check on the non-negative vegetation fraction
+           zerr(i)= 0.0
+        endif
 17    continue
       return
       END

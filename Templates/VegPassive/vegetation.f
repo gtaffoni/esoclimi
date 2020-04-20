@@ -16,8 +16,15 @@
         include 'vegetation.h'
         real*8 Tcur
 
+<<<<<<< HEAD
         death=dead
 	if (Tcur.lt.(Tveg-dTdead).or.Tcur.gt.(Tveg+dTdead)) death=dead*100 
+=======
+* vegetation can't live if temp is too far from Tveg OR negative
+        death=dead
+	if (Tcur.lt.(Tveg-dTdead).or.Tcur.gt.(Tveg+dTdead).or.Tcur<273.5)
+     >     death=dead*100 
+>>>>>>> EsoMPI
 
         return
         end

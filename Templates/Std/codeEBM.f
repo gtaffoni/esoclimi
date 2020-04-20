@@ -29,6 +29,31 @@ c       READ FILE WITH TOP-OF_ATMOSPHERE DATA
 c        calculate LIQUID WATER TEMPERATURE RANGE at total pressure pressPtot
       call LWTR(pressPtot,Tice,Tvapor) 
 
+c
+c  STUDY OF BISTABILITY
+c
+c  OVERWRITING TEMPERATURE INITIALIZATION
+c
+c  Here I evaluate DeltaT in Nt=20 intervals and use the value CurrentT*DeltaT
+c  THIS VALUE MUST BE CHANGED BY-HANDS FOR EACH RUN
+c
+c
+
+      print *, '**************************'
+      print *, 'Tstart:'
+      print *,Tstart
+      print *, Tice, Tvapor
+      print *, '**************************'
+c
+c
+c
+ 
+      do i=1,N
+         f(i)=Tstart            ! zonal temperatures
+      enddo
+      tsum_old=Tstart
+*      ddeltaTold=0.0
+      
 
 c       PRINT INPUT MODEL PARAMETERS
       include 'print_input.f'
@@ -42,13 +67,14 @@ c        MODULE OPEN OUTPUT FILES
 
       nlastorbits=0      ! number of orbits after convergence or after forced exit  
       convergence=0      ! flag for convergence
-
+      nconv=0            ! flag for continous convergence, nprompt orbits
+      
 *************************************************************************************
 *     START LOOP ON ORBITS
 *************************************************************************************
       do i=0, maxNorbits+5  
 
-         if(convergence.eq.1.or.i.gt.maxNorbits) then
+         if(convergence.eq.2.or.i.gt.maxNorbits) then
             nlastorbits=nlastorbits+1 
          endif
 
@@ -110,11 +136,12 @@ c     mean annual zonal arrays
 * -----------------------------------------------------------------------------
 *     APPLY CONVERGENCE CRITERIA every nprompt orbits, starting after 30 orbits
 * -----------------------------------------------------------------------------
-         call calculate_convergence(i, nprompt, 
-     >        convergence, annualglobalT,tsum, tsum_old,
-     >        annualglobalA, fcTOT, iceTOT, pressPtot, sigmaCRIT, 
-     >        sigmaLIM, Tmax, f, tts, t2, exitFLAG)
 
+*     This calls the correct calculate_convergence subroutine (different for
+*         vegetation and no vegetation)
+         include 'module_convergence.f'
+
+         
 *      write annual module output and splash output if needed
          include 'module_annual_output.f'
 

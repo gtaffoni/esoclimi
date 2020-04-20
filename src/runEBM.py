@@ -14,21 +14,31 @@
     _dir == location of the source files to setup and compile
     
 """
+<<<<<<< HEAD
 
+=======
+import logging
+>>>>>>> EsoMPI
 
 def setupEBM(parameters,_dir):
 # REMEMBER TO ADD CALCULUS OF PLANET MASS AND CHANGE BELOW
     import sys
     from libraryEBM import modulationPAR
     from constantsEBM import *
+<<<<<<< HEAD
     import logging
+=======
+>>>>>>> EsoMPI
     import shutil
 
     NUMBER = parameters['number']
     VERSION = parameters['version']
     SIMTYPE = parameters['simtype']
     planet = parameters['planet']
+<<<<<<< HEAD
     logging.info("reading %s parameters", planet)
+=======
+>>>>>>> EsoMPI
     ### assign parameter values from input better in the future
     ff            = parameters['p']
     eccP          = parameters['ecc']
@@ -39,6 +49,15 @@ def setupEBM(parameters,_dir):
     fo_const      = parameters['fo_const']
     tabTOAalbfile = parameters['TOAalbfile']
     tabOLRfile    = parameters['OLRfile']
+<<<<<<< HEAD
+
+    ####
+    startpar_file = _dir+"startpar.h"
+    parEBM_file   = _dir+"/parEBM.h"
+    planet_file   = _dir+planet+".h"
+    planet_orig   = _dir+"/planet.h"
+=======
+>>>>>>> EsoMPI
 
     ####
     startpar_file = _dir+"startpar.h"
@@ -46,7 +65,7 @@ def setupEBM(parameters,_dir):
     planet_file   = _dir+planet+".h"
     planet_orig   = _dir+"/planet.h"
 
-
+<<<<<<< HEAD
      #EARTH VALUE! warning it's in PASCAL - this is why I divide by 10, in the calling cycle is in ppvm
     OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF']
                            # ccm3tab0: OLR calculated with CCM3 taken at face value (no cloud forcing)
@@ -59,6 +78,21 @@ def setupEBM(parameters,_dir):
     R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
     pmass    = 1.0 #planet mass in Earth masses
 
+=======
+
+     #EARTH VALUE! warning it's in PASCAL - this is why I divide by 10, in the calling cycle is in ppvm
+    OLRmodel='ccm3tab0'   # ['ccm3tab0','CCMcal00', 'CCMcalCF']
+                           # ccm3tab0: OLR calculated with CCM3 taken at face value (no cloud forcing)
+                           # CCMcal00: OLR calibrated with CCM, WITHOUT correction factors
+                           # CCMcalCF: OLR calibrated with CCM, WITH correction factors 
+
+    p_CO2_P /= 10.        # p_CO2_p and p_CH4_E in imput are in PPMV
+    p_CH4_P=p_CH4_E/10.       # planet CH4 partial pressure [bar]
+    press_E  = 101325.0 + p_CO2_P
+    R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient
+    pmass    = 1.0 #planet mass in Earth masses
+
+>>>>>>> EsoMPI
      # calculate parameters c0 and c1 of modulation term, Eqs. (A11), (A12) 
     C0par,C1par=modulationPAR(obliq,R)
 
@@ -189,8 +223,12 @@ def setupEBM(parameters,_dir):
         # search index of pressure columns to be interpolated
         for ip in range(Np-1):
            if pOLR[ip] <= pressP/1.e5 <= pOLR[ip+1]:
-        	 ip0=ip 
-        
+        	 ip0=ip
+        try:
+            ip0
+        except NameError:
+            ip0err="Press=%5.3f Ecc=%4.2f Dist=%3.1f Obl=%5.3f CO2=%5.3f GG=%d"%(parameters['p'],parameters['ecc'],parameters['dist'],parameters['obl'],parameters['p_CO2_P'],parameters['gg'])
+            print ("Error in ip0  %s" % ip0err )
         x0=pressP/1.e5
         xi=pOLR[ip0]
         xp=pOLR[ip0+1]
@@ -265,28 +303,50 @@ def setupEBM(parameters,_dir):
 
 
 def compileEBM(runDir,logfile):
-    import logging
     #from posix import system
     import subprocess
     import os
-    logging.info("Compile codes")
+    from random import randint
+    from time import sleep
     origin = os.getcwd()
     # move to the proper directory
     os.chdir(runDir)
+<<<<<<< HEAD
     logging.info("")
     p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
     # p is the return code of Make so we can make some check
+=======
+    rand_tmp=randint(1,30)
+    logging.debug("CompileEBM: rand,  %d" % rand_tmp )
+    sleep(rand_tmp)
+    try:
+        logging.debug("CompileEBM: starting")
+        p = subprocess.call("make", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+        # p is the return code of Make so we can make some check
+        logging.debug("CompileEBM: end,  %d" % p )
+    except subprocess.CalledProcessError as e:
+        logging.debug("CompileEBM: %s" % e.output)
+        raise
+    except OSError:
+        logging.error("CompileEBM: execution error")
+        raise
+>>>>>>> EsoMPI
     os.chdir(origin)
-
+    return p
 
 def runEBM(runDir,logfile):
-    import logging
     import subprocess
     import os
     origin = os.getcwd()
     # move to the proper directory
-    logging.info("Run program")
     os.chdir(runDir)
-    p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+    try:
+        logging.debug("RunEBM: starting...")
+        p = subprocess.call("./codeEBM.x", stdout=logfile,stderr=subprocess.STDOUT,shell=True)
+        logging.debug("RunEBM: end, %d" % p)
+    except:
+        logging.error("RunEBM: execution error")
+        raise
     os.chdir(origin)
+    return p
 

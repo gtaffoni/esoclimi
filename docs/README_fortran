@@ -1,0 +1,437 @@
+
+==================================================================
+     ESTM readme
+
+     ESTM 1.1.1  - February 9th, 2017
+     	      	    Authors:
+		    Juan Vladilo
+		    Giuseppe Murante
+		    Laura Silva
+		    Antonello Provenzale
+		
+		 contacts: vladilo@oats.inaf.it
+		           murante@oats.inaf.it
+
+                 readme version 1.1.1, 2/9/2017 GM
+
+		 NEW: read sections on FITS file,
+                 and the new auxiliary readme files 
+                   README_results
+		   README_execution
+
+		 NEW: directory structure changed.
+		      The new parallel.py MPI driver for ESTM is in src
+	       							
+==================================================================
+
+The code now is organized in sub-directories.
+  Templates/Std contains the basic standard ESTM FORTRAN files
+  Templates/ModulesDef contains default module files
+  Templates/VegPassive the main files for the module Vegetation-Passive
+  Templates/VegPassive/Modules contains module files for the module Vegetation-passive
+  Templates/VegAlbedoFB, Templates/VegAlbedoFB/Modules contains the same for the Vegetation-Albedo FB build
+  Src is the directory when the code is assembled, built and run
+  Src.bak will save old Src (if present)
+    if an older Src.bak is present, it will be deleted
+  Risultati (the results directories) will contain the newest results
+  Risultati.bak will save old Risultati (if present)
+    if an older Risultati.bak is present, it will be deleted
+
+  src contains all the python files, including those used for the parallel driver (see separate README)
+    This includes EARTH.py, K452b.py and Dune.py
+
+  Templates/Documentation contains READMEs and run_dune.bash, used to run the code standalone.
+   it also contains temp1.py and veg1.py
+
+*********  WARNING:
+ runEBM.py and startpar.h have been slightly changed from the previous version!!
+ see section on the production of .fits file
+*********
+
+
+************ STANDARD VERSION **************************************************
+
+The standard ESTM code is organized in 11 fortran source files, and
+six header files. 
+
+codeEBM.f : this file contains the main body of the code.
+	    Now, all calculations are done inside subroutines.
+	    By this way the code is much easier to read and can
+	    be modularized (to be done...)
+
+core_fctns.f : this files contains the subroutines called by
+	       codeEBM, each one doing a specific task. In details:
+	        update_seasonal_qties
+      		zonal_qties_current_season
+      		calculate_annual_means
+      		calculate_zonal_means
+      		calculate_convergence
+      		make_output
+	       (names sould be self-explicative)
+
+integrate.f :  this file contains the integration functions, odeint,
+	       derivatives and all what they need
+
+integrator_call.f : (included by codeEBM.f) contains the call to the integrator function
+                    (this can be different if a module different from Std is used)
+
+EBMfunctions.f : this file contains all the functions needed by the EBM
+		itself (the terms in the equations, and the functions
+		used to estimate them)
+
+other_functions.f : this file contains all the other functions, e.g.
+		        geography, means, habitability...
+
+initialize.f : this contains the initializations of variables. Included by
+	       codeEBM.f
+
+open_output.f : opens the output files. Included by codeEBM.f
+	      
+print_input.f : prints the input parameters. Included by codeEBM.f
+
+read_toa.f : reads top of atmosphere tables. Included by codeEBM.f
+
+
+startpar.h :  used by runEBM.py to build the actual parameter file for the model
+parEBM.h :    actual parameter file produced
+commons.h :   common blocks used by the code
+functions.h : function declarations
+matrices.h :  declaration of vectors and matrices used by the code. Included by 
+  	      codeEBM.f and core_fctns.f
+var-incl.h :  variable declarations.
+
+module_albedo_surf.f : this contains the function albsup used in the standard buils.
+       We need a separate file to be able to modularize the albedo.
+
+
+
+*********** "DEFAULT" MODULE FILES *********************************************
+There are also 8 module_*.f files in the directory ModulesDef. 
+Module files MUST BE PRESENT AND VOID in the standard build.
+The directory contains the needed empty files:
+module_annual_mean.f    module_final_output.f  module_initialize.f       module_open_output.f    module_write_seasons.f module_annual_output.f  module_include.f  module_update_season.f : 
+
+
+
+************ "PASSIVE" VEGETATION VERSION  *************************************
+
+This is our first module. If contains four more main files:
+
+vegetation.h : definitions of parameters and matrixes for the vegetation
+
+initialize_aux.f : initialization of vegetation-specific variables
+
+open_output_aux.f : opening of vegetation-specific output files (see below)
+
+core_fctns_aux.f: functions that calculates needed values for vegetation, like core_fctns.f
+	  
+vegetation.f : all functons related to vegetation, e.g. growth_factor grow(Tcur)
+
+
+Two files will SUBSTITUTE the corresponding ones present in Std. They are:
+integrate.f : this contains the simultaneous integration of the two ODE for T and vegetation.
+
+integrator_call.f: the call to the function that integrates the two ODE to be inserted in 
+                   the main file codeEBM.f
+
+
+In the sub-directory Modules , the module files
+
+ module_annual_mean.f module_final_output.f module_initialize.f module_open_output.f    
+ module_write_seasons.f module_annual_output.f  module_include.f module_update_season.f
+
+just contain some fortan code line for calling the new functions or initialization. For example,
+ module_annual_mean.f contains the call to one of the functions in core_fctns_aux.f:
+         call calculate_annual_means_aux(i, phi, fo,
+     >     vegmat, annualglobalVegZonal, annualglobalVeg)
+
+
+*************** parameters (vegetation.h)
+        parameter(Tveg=293.3)        maximum growth temp of vegetation
+        parameter(Vegstart=0.1)      initial vegetation fractione 
+        parameter(width=1/20.0)      width of the logistic curve (in year)
+        parameter(dead=0.1/Porb)     mortality of vegetation (per year)
+        parameter(gromax=0.3/Porb)   maximum growth (in fraction, per year)
+        parameter(albveg=0.15)       not used
+        parameter(seedfall=0.0)      cut-out of diffusion (0=no diffusion, (0.,1]=diffusion with Dterm/Cterm)
+
+
+
+************ "ALBEDO FEEDBACK" VEGETATION VERSION **************************************************
+
+Our second module. I used the vegetation albedo for the fraction of continents, in each
+latitudinal zone, occupied by vegetation.
+
+NOTE THAT I DID THIS ONLY FOR THE FRACTION OF CONTINENTS THAT IS NOT COVERED BY CLOUDS.
+Does the vegetation changes the clouds??
+
+This module is easier. Just had to add fveg in vegetation.h, and in Modules, we have
+module_albedo_surf.f : the new albsub function (note that now this file does exixt also
+   in the Std build, where it contains the original function. It is included in EBMfunctions.f
+module_include.f:   the include for main program a
+module_vegalbedo_local.f: the include for function alb_Z(hour) and the assignment of fveg
+
+
+WARNING. IF YOU USE THIS BUILD, THE VEGETATION PARAMETERS ARE SET IN THE vegetation.h YOU
+FIND IN THE DIRECTORY VegAlbedoFB
+        parameter(albveg=0.15)       now is used and sets the vegetation albedo.
+
+
+======================================================
+         COMPILING AND RUNNING THE CODE
+======================================================
+
+
+1) Std version: copy all the files in the directory Templates/Std into the directory Src
+   copy all the files in Templates/ModulesDef in the directory Src
+   IMPORTANT: copy Templates/Std/startpar_standalone.g to Src/startpar.h
+              copy src/runEBM_standalone.py to Src/runEBM.py
+	      copy src/libraryEBM.py , src/constantsEBM.py in Src
+
+2) Passive vegetation version: after 1), copy ALSO all the files in the Templates/VegPassive directory
+   and in Templates/VegPassive/Modules directory in Src
+
+3) Albedo FeedBack from vegetation: after 2), copy ALSO all the files in the Templates/VegAlbedoFB and 
+   Templates/VegAlbedoFB/Modules directories into Src
+
+At this point:
+
+The python script runEBM.py prepares and runs the code. It needs:
+    one "planet data" file, e.g. EARTH.py
+    one "geography" file if required, e.g. fo_earth.dat
+    startpar.h, used to produce the actual parEBM.h header file
+    two auxiliary python files, namely constantsEBM.py and libraryEBM.py     
+
+usage:
+    cd Src
+    python runEBM.py EARTH.py
+(for example: this builds and runs the EBM model for Earth)
+
+Note that the fortran code is now compiled via a Makefile (included).
+Makefiles are different for the various versions, the module one containing more files to 
+compile and link.
+The code can also be compiled standalone, using a previously prepared parEBM.h, 
+with the command
+
+    make
+  
+that, given in Src, produces and executable file called codeEBM.x
+
+For CLEANING the Src directory:
+    make clean
+this will delete all .o objects and the executable
+
+For CLEANING THE SOURCE FILES from the Src directory:
+    make cleanmain
+this will also delete all source, header, python and data files.
+BEWARE: THIS WILL CLEAN Risultati/ TOO!!!!!
+
+Finally, I included a dir named "Plots" with Juan's .py files for plotting things, and one called
+"Planets" that we can fill with more examples.
+
+
+***************** automatic config and run ******************************
+
+Note that there is a run.bash shell script that does everything automatically.
+./run_dune.bash
+asks you how to configure the code, fills Src and runs the code. It leaves the source files there
+but moves the results in the main directory.
+You can also issue
+
+./run.bash 0 0  (does not ask anything and builds and runs Std Earth)
+./run.bash 1 0  ( "   "    "     "      "    "     "   "   VegPassive Earth)
+./run.bash 2 0  ( "   "    "     "      "    "     "   "   VegAlbedoFB Earth)
+
+this shell is intended to be kept updates while we add planets and modules.
+ 
+
++++++ MORE ON EXECUTION IN README_execution +++++
++++++ MORE ON EXECUTION IN README_execution +++++
++++++ MORE ON EXECUTION IN README_execution +++++
++++++ MORE ON EXECUTION IN README_execution +++++
+
+
+
+
+I tested this version against the original one EBM_aprile2015, and 
+it gives the same results. We need to verify that it runs correctly
+in the other cases and that it produces the correct data files.
+
+The same is true for the passive vegetation version, even if results are SLIGHTLY different
+because of the simultaneous integration of the two ODE that changes the values of 
+adaptive time-steps h.
+
+I tested that VegAlbedoFB is doing the same thing that we obtained in Pisa with Antonello, 1/9/2017
+
+
+======================================================
+     NOTE ON MODULARIZATION
+======================================================
+
+The current structure guarantees that if one changes the Std version for some
+reason (improvements, bug fixes, etc) changes are inherited by EACH module we will
+build. This is because FIRST all the files in Std are copied, THEN all the files
+in the desired module(s) run are copied, overwriting the empty module files
+of the Std build, but keeping all the rest.
+That is, all the computations needed to ALL modules are ONLY contained in the
+source files in Std.
+
+On the other hand, changing a module WILL NOT change the behaviour of the standard build.
+
+We need the module_*.f files, because the calls to build-specific functions (vegetation in this 
+moment, but we can add modules) can have different formats, variable lists etc.
+
+Note that all the module files are void in the Std build.
+
+The integrator and the integrator caller must be different for each build.
+This is because ALSO the integrator called change with the different build!
+For instance, it is
+            call odeint(f,fo,N,t1,t2,eps,h1,hmin,nok,nbad) 
+in the Std build but it also need the vegetation vector
+            call odeint(f,veg,fo,N,t1,t2,eps,h1,hmin,nok,nbad) 
+in the VegPassive build.
+
+I would ask you to follow the present structure....!
+
+Next module will be VegAlbedoFB. One or two module files will be needed.
+
+
+
+======================================================
+     FITS FILE FOR THE DATABASE (under construction)
+======================================================
+
+We will produce an online archive of planets, containing
+several different planet runs where we will change a
+number of parameters (gravity, pressure, obliquity,
+insolation etc etc etc)
+
+To do this we will need the code to produce a new file called 
+esocplimi.par
+This contains ALL THE METADATA NEEDED BY THE DATABASE,
+written from inside the code itself after the convergence,
+in the appropriate format. 
+
+Among them, we also need the code version, the type of
+run (e.g., Std, VegPassive, VegAlbedoFB...) and a 
+sequential number of run (for each day).
+
+These three more parameters have been added in 
+startpar.h and are changed by runEBM.py according
+to the way in which it is called (see README_execution)
+
+esoclimi.par and year_lat_temp_last1.tlt are needed by
+the python script fits_map_temperature.py
+
+if you run the script in the Risultati dir, you will
+obtain a .fits file named
+
+ESTM1.1.02-08.02.2017-0001.fits
+    ------ ---------- ----
+   version    date     sequential number
+
+you can see the ascii part of the file using:
+fold ESTM1.1.02-08.02.2017-0001.fits |less
+
+Note all the metadata keyword/value keys
+
+After the ASCII part, the fits file contains a binary table of
+yearperiod latitude temperature
+values.
+
+
+fits_map_temperature.py is in the main directory.
+IT NEEDS THE PYTHON PACKAGE pyfits
+
+
+======================================================
+     STD OUTPUT
+======================================================
+
++++++ PLEASE REFER TO README_results +++++
++++++ PLEASE REFER TO README_results +++++
++++++ PLEASE REFER TO README_results +++++
++++++ PLEASE REFER TO README_results +++++
+
+
+
+======================================================
+     VEGETATION OUTPUT
+======================================================
+
+  In Risultati you will find:
+
+   year_lat_veg_last[1,5].tlt
+        that contains, for the last [1,5] years, the fraction of vegetation per season per latitude zone. Format:
+	t, latitude, veg*(1-fo), veg (so the second column is the real vegetation fraction in the zone
+                                      while the third is the fraction over the contintens)
+
+   year_veg_average.dat 
+        that contains the averaged vegetation fraction
+        Also here, fist column is year, second column is global vegetation fraction on continents, and the third is the same but area-weighted
+
+
+   On the splash output you will find this same two values added below the orbital average temperature output
+
+
+===================================================================
+   PLOTTING
+===================================================================
+   The very simple temp1.py, veg1.py scripts do produce a plot of
+   temperature as a function of latitude in the last year for the
+   given season; fraction of vegetation as a function of latitude
+   in the last year as a function of latitude in a given season
+   (both on continents, and global, that is, multiplied by the appropriate
+    continent fraction)
+   use:
+   ipython
+   In [1]: %run temp1.py
+   In [2]: temp(12)
+   shows the prot for season 12 (on 48) 
+   ipython
+   In [1]: %run veg1.py
+   In [2]: veg(12)
+   In [3]: vegfraz(12)
+   the same for vegetation fractions (vegfraz is on the continent, veg on the 
+     latitude band)
+
+      (ctrl-d to exit ipython)
+
+   They require results to stay in the subdir Risultati
+   They also produce a .png file
+   More complex plots in Plots (by Juan)
+
+======================================================
+     ALBEFO FB VEGETATION OUTPUT
+======================================================
+   Currently no additional output is done.
+
+======================================================
+TO DO:
+======================================================
+
+ - explore the idea of also studing VEGETATION convergence!
+
+ - add some planet configuration to the dir Planets
+   Kepler 452b added
+
+ - produce automatically an image to be used as a preview in
+   the database (Cristina Knapic)
+
+ - clean variables not used in the main
+
+
+ - EXPLORE THE HUGE PARAMETER SPACE!!!
+ 
+
+===================================================================
+   BUGS
+===================================================================
+
+- None found. PLEASE INFORM ME IF YOU FIND ANY!
+
+- Fhab and hcxl are identical (also in the original)
+  should be liquid water and comples life (0-50) habitabilities
+  NOTE. THIS IS NOT TRUE ON K452b. IT'S NOT A BUG, IT IS THAT
+  EARTH TEMP IS NEVER ABOVE 50^!!
+

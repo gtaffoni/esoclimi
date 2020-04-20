@@ -6,8 +6,8 @@ LNKCMD = gfortran
 #OPTIMIZE     = -O3 -Wall
 OPTIMIZE     = -O5 
 #OPTIMIZE = -O0 -ggdb
-OBJS   = codeEBM.o  core_fctns.o  integrate.o  EBMfunctions.o other_functions.o
-INCL   = commons.h  functions.h  matrices.h  parEBM.h  startpar.h  var-incl.h initialize.f Makefile print_input.f open_output.f  splash_output.f module_annual_mean.f  module_annual_output.f  module_final_output.f  module_include.f  integrator_call.f  module_open_output.f  module_update_season.f  module_write_seasons.f module_albedo_surf.f
+OBJS   = codeEBM.o  core_fctns.o  integrate.o  EBMfunctions.o other_functions.o convergence.o
+INCL   = commons.h  functions.h  matrices.h  parEBM.h  startpar.h  var-incl.h initialize.f Makefile print_input.f open_output.f  splash_output.f module_annual_mean.f  module_annual_output.f  module_final_output.f  module_include.f  integrator_call.f  module_open_output.f  module_update_season.f  module_write_seasons.f module_albedo_surf.f convergence.f
 
 CFLAGS = $(OPTIMIZE)
 LIBS   = 

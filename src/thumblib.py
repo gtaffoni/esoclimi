@@ -4,7 +4,8 @@ import sys
 import os
 from posix import system
 import numpy as np
-
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm  
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes

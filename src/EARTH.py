@@ -42,8 +42,13 @@ if OLRmodel=='ccm3tab0':
  
 ff=1.0
 pressP=ff*pressEdry      # total dry pressure of the planet (N2/O2 atmosphere, greenhouse gases included, water excluded)
+<<<<<<< HEAD
 p_CO2_P=p_CO2_E       # planet CO2 partial pressure [bar]
 p_CH4_P=p_CH4_E       # planet CH4 partial pressure [bar]
+=======
+p_CO2_P=ff*p_CO2_E*0.1       # planet CO2 partial pressure [bar=PPMV*0.1]
+p_CH4_P=ff*p_CH4_E*0.1       # planet CH4 partial pressure [bar=PPMV*0.1]
+>>>>>>> EsoMPI
 
 cp_P,molwtP=AtmPar(pressP,p_CO2_P,p_CH4_P)
 

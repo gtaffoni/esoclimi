@@ -1,0 +1,194 @@
+AAAAAAAAAAAAA WARNING dir structure changed here!!
+==================================================================
+
+    VARIOUS WAYS TO EXECUTE ESTM
+
+==================================================================
+
+
+
+   *************** single run ***********************
+
+ The run.bash script now accepts 4 parameters (on the command line, 
+ or from stdin)
+
+ They are:
+   1. module (0=Std, 1=Vegetation passive, 2=Vegetation albedo feedback)
+   2. planet (currently 0=EARTH, 1=K452b, 2=Dune)
+   3. [NEW] number of simulation - sequential number of the simulation in t
+      in the current day
+   4. [NEW] code version (currently 1.1.02)
+
+ On the command line you can give ONLY THE FIRST TWO NUMBERS - in that case,
+ runEBM.par will set number to 0 and version to "Unknwn".
+ the "module" input also sets SIMTYPE (simulation tipe). If you DON'T GIVE
+ THE FULL INPUT, SIMTYPE is set to "---".
+
+These addictional parameters are used to build the file "esopianeti.par", that is
+employed to produce a .fits file for our databese (under construction).
+
+So, you can give:
+ ./run_dune.bash 0 0 
+ ./run_dune.bash 2 0 1 1.1.02
+ ./run_dune.bash [ENTER]
+ [this will ask you the choices from keyboard; YOU CAN SKIP THE LAST TWO, that is 
+ equivalent to the command line ./run.bash n m (where n,m are the input you gave
+ from keyboard)]
+
+Once this is done, all proceeds as usual, that is:
+
+run.bash changes dir to Src and executes 
+ python runEBM.py [parameters]
+where [parameters] now CAN have three additional items, namelt number, version, simtype
+ 
+
+The effect is:
+1) Std version: all the files in the directory Std are copied into the directory Src
+   all the files in ModulesDef are copied in the directory Src
+
+2) Passive vegetation version: after 1), ALSO all the files in the VegPassive directory
+   and in VegPassive/Modules directory are copied in Src
+
+3) Albedo FeedBack from vegetation: after 2), ALSO all the files in the VegAlbedoFB and 
+   VegAlbedoFB/Modules directories are copied into Src
+
+ runEBM.py then compiles the code (using make) and runs it
+
+once finished, run.bash MOVES the directory Risultati to the main directory.
+If an old Risultati exists, it is moved to Risultati.bak
+The same for Src.
+
+Note that at the end of the process the directory Src is NOT cleared. The desired version 
+of the code is there, with its source files and header file. You can work there as you wish 
+if you want to modify something (but remember that running again run.bash WILL clear the
+directory; if you work directly in Src you'll have to compile and run the code by hand)
+Remember to re-create the dir Risultati if you work directly in Src
+
+As always, you can do everything by hand from the beginning, as described in the README file.
+note that you can now call runEBM.py in one of the following way
+
+python runEBM.py EARTH.py
+python runEBM.py EARTH.py 1 1.1.02 Std (for example)
+
+while any mixed format is NOT walid, eg.g. python runEBM.py EARTH.py 1 results in an error
+(the same holds for run.bash).
+
+
+
+
+   *************** multiple run ***********************
+
+Here I added a example file to run many times the code,
+changing one parameter (in this examples, the pressure
+or the vegetation albedo)
+They are:
+multipressure.py (makes 3 runs with 0.5, 1.0, 1.5 times the Earth pressure - 
+                  everything else unchanged from Earth)
+multiveg.py      (makes 3 run with albefo FB on, vegetation albedo 0.15, 0.13, 0.1
+                  everything else unchanged from Earth)
+They can be find in Templates/Documentation and THEY HAVE NOT BEEN TESTED AGAINST THE CURRENT VERSION
+I expect that they would need some changes, but the current version has the parallel driver that
+should be preferred.
+
+In the previous one, they were intended to show how to build a python script for running
+many times the code, changing one parameter, automatically.
+
+In the first case, EARTH.py is copied in PRESSURE.py. The script parses is,
+produces one PRESSUREcurr.py with the correct pressure, that is used by runEBM.py
+
+In the second case, vegetation.h is copied in vegetation_template.h; this is scanned,
+the parameter(aveg-...) is changed, and the result is vegetation.h that is used
+by runEBM.py
+
+In both cases, also the .fits file is produced (this requires pyfits to be installed).
+In the main dir, two subdirs are created:
+RisultatiMultipli
+Database
+
+in the first one, all Risultati folders (properly renamed) are saved.
+in the secon one you'll find your .fits files.
+
+BEWARE that extreme care must be taken when changing these files, especially in the formatting
+(that is c-style) for making directory names and for writing the (changing) pressure, albedoes
+in the used files.
+
+
+
+
+
+   *************** structure of the exec calls ***********************
+
+
+   SINGLE RUN
+
+  ./run.bash       (cleans Src; creates Src/Risultati; copies source files in Src)
+      |
+      |
+      ---------> python runEBM.par (in Src; configures the chosen module with its parameters
+                    |                       by parsing, e.g., EARTH.py)
+                    |
+                    ---------------> make
+                                     ./codeEBM.x
+       |  
+       |
+       moves Risultati in the main dir
+
+
+
+   MULTIPLE RUN
+  python multipressure.py    (cleans Src; creates RisultatiMultipli, Database, Src/Risultati;
+      |                       copies source files in Src; changes the pressure in PRESSUREcurr.py)
+      |
+      ---------> python runEBM.par (in Src) (as above)
+                    |
+                    |
+                    ---------------> make
+                                     ./codeEBM.x
+      |
+      |
+    copies Src/Risultati in RisultatiMultipli/RisultatiPress#.##; copy ESTM*fits file in Database;
+    cleans Src; cycle to the next pressure 
+
+
+
+  python multiveg.py
+    as above, but uses EARTH.py and changes vegetation.g           
+
+
+
+
+   *************** by-hand execution  ***********************
+
+   from the main dir (in this case you will use the standard parEBM.h, defined for EARTH):
+
+       cp Templates/ModulesDef/* Src
+       cp Templates/Std/* Src
+       cp Templates/Std/startpar_standalone.h Src/startpar.h
+       cp src/runEBM_standalone.py Src/runEBM.py
+       cp src/libraryEBM.py Src
+       cp src/constantsEBM.py Src
+
+
+  if you want VegPassive OR VegAlbedoFB:
+  
+        cp Templates/VegPassive/* Src
+        cp Templates/VegPassive/Modules/* Src
+
+  if you want VegAlbedoFB:
+
+        cp Templates/VegAlbedoFB/* Src
+        cp Templates/VegAlbedoFB/Modules/* Src
+
+    cd Src
+  mkdir Risultati
+  make clean
+  make
+  
+  ./codeEBM.x
+
+
+  This will NOT produce the ESTM*fits file. All results will stay in Src/Risultati
+
+
+
+

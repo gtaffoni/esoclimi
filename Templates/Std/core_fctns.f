@@ -586,6 +586,7 @@ c     mean annual albedo northern hemisphere
       end
 
 
+<<<<<<< HEAD
 ************************************************************
 *   this calculates applies convergence criteria           *
 ************************************************************
@@ -687,6 +688,8 @@ c       mean planet temperature lower than half the minimum value
       return
       end
 
+=======
+>>>>>>> EsoMPI
 
 ************************************************************
 *   final output and closing of files                     *
@@ -695,6 +698,7 @@ c       mean planet temperature lower than half the minimum value
 
       implicit none
       include 'parEBM.h'
+      include 'module_incvalori.h'
       
       common /tempmatrix/ tempmat
 
@@ -819,12 +823,11 @@ c     write mean annual zonal values: latitude, temperature, ftime Eq.(5), OLR
       endif
       
 c     write a summary of input and output parameters 
+      
       open(unit=28,file='Risultati/valori.txt',status='unknown')
-      write(28,39) Mstar,LumStar,smaP,eccP,omegaPERI,obliq,
-     >     Prot,fom,pressP,q0,Porb/86400,annualglobalT,DelT_EP,
-     >     fhab,chab,nhab,annualglobalA,float(i),Tmin,Tmax,
-     >     asl,Rpar,TotOLR,sigmaRG,sigmaBoil,exitFlag
+      include 'module_outvalori.f'
       close(28)
+
  39   format(26(1p e12.5,1x))  
       
       open(unit=29,file='Risultati/GlobalData.txt',status='unknown')
