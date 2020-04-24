@@ -1,4 +1,5 @@
       common /tempmatrix/ tempmat
+      common/mediat/Tmedlat
       common /gasplusvapor_pars/ pressPtot,cp_Ptot,molwtPtot
       common /zonalcloudcover/ zonalfc 
       common /interp_TOA/ Matrix_TOA,T_TOA,p_TOA,z_TOA,as_TOA 

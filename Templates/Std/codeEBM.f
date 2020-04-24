@@ -2,11 +2,12 @@
       program codeEBM
 
       implicit none
-      integer k
+      integer k, ilat, ijs, jjs
       include 'parEBM.h'
 
       include 'var-incl.h'
       include 'matrices.h'
+      real*8 Tmedlat(N)
       include 'functions.h'
 
 c       MODULE INCLUDES
@@ -82,7 +83,22 @@ c        MODULE OPEN OUTPUT FILES
 *     START LOOP ON SEASONS   
 * --------------------------------------------------
          do is=1,Ns 
-          
+
+*     here I evaluate the average T of the previous 3 months, used in f_ice
+*     evaluating it inside the function is very slow and useless
+            do ilat=1,N
+               Tmedlat(ilat)=0.
+               do ijs=is,is-Ns, -1 
+                  if (ijs.le.0) then
+                     jjs=ijs+Ns
+                  else
+                     jjs=ijs
+                  endif
+                  Tmedlat(ilat)=Tmedlat(ilat)+tempmat(jjs,ilat) 
+               end do  
+               Tmedlat(ilat)=Tmedlat(ilat)/(dfloat(Ns)+1.)
+            end do
+            
             tts(is)=0.d0        ! initialize mean global temperature of current season
             t2 = t1 +  Porb/Ns 
 

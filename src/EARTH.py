@@ -56,12 +56,12 @@ gP = 1.*gE # x*gE
 
 albedoFile='none'
 
-asl=0.18             # surface albedo of lands (=0.2 in WK97)
-asil=0.70            # surface albedo of ice on lands (=0.85 Pierrehumbert)
+asl=0.19             # surface albedo of lands (=0.2 in WK97)
+asil=0.73            # surface albedo of ice on lands (=0.85 Pierrehumbert)
 asio=asil            # surface albedo of ice on ocean (=0.50 Pierrehumbert) 
 
 fcw=0.70              # cloud coverage on water (mean from Sanroma & Palle 2011=0.70)
-fcl=0.60              # cloud coverage on land (mean from Sanroma & Palle 2011=0.50)
+fcl=0.61              # cloud coverage on land (mean from Sanroma & Palle 2011=0.50)
 fci=fcl               # cloud coverage on ice (mean da Sanroma & Palle 2011=0.50) 
  
 R=2.2        # ratio max(modulation term)/min(modulation term) of the diffusion coefficient

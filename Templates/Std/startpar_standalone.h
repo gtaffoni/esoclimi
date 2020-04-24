@@ -55,6 +55,7 @@
         real*8 fixAlbedo
         real*8 Tlim1 ! simulation interrupted when Tmax < Tlim1
 	character*50 albedoFile,TOAalbFile
+        integer fullout
 
 	integer NUMBER
         character*7 VERSION
@@ -132,18 +133,18 @@ c       LATITUDE GRID
 c       TIME INTEGRATION PARAMETERS
 	parameter(Ns=48)               ! number of data in one orbital period
 *	parameter(maxNorbits=100)      ! max integration time (number of orbital periods)     
-	parameter(maxNorbits=1000)      ! max integration time (number of orbital periods)     
-	parameter(deltaTconv=1.0d-4)   ! simulation stops when DELTA(annual global temperature)/annual global temperature 
+	parameter(maxNorbits=500)      ! max integration time (number of orbital periods)     
+	parameter(deltaTconv=1.0d-5)   ! simulation stops when DELTA(annual global temperature)/annual global temperature 
 *                                        converges within this accuracy
-	parameter(ddeltaTconv=1.d-4)   ! also the derivative of DeltaT/T is checked 
+	parameter(ddeltaTconv=1.d-5)   ! also the derivative of DeltaT/T is checked 
 	
-	parameter(h1 = 80000.0)
-	parameter(hmin=60.) 
+	parameter(h1 = 40000.0)
+	parameter(hmin=6.) 
 	parameter(eps=1e-6) 
 	
 c       PRINT OPTIONS	 
 	parameter(nouti=2)             ! numero di output in totale
-	parameter(nprompti=5)         ! numero di calcoli della temp media a schermo
+	parameter(nprompti=1)         ! numero di calcoli della temp media a schermo
 	parameter(idebug=0)            ! set 1 for print debugging 
 	
 c       TEMPERATURES 
@@ -239,8 +240,8 @@ c       DIFFUSION PARAMETERS
 	
 c       ALBEDO PARAMETERS
         parameter(asl=0.20)   ! surface albedo of lands (=0.2 in WK97)
-	parameter(asil=0.85)   ! surface albedo of ice on lands (=0.85 Pierrehumbert)	
-	parameter(asio=0.50)   ! surface albedo of ice on ocean (=0.50 Pierrehumbert) 
+	parameter(asil=0.8)   ! surface albedo of ice on lands 
+	parameter(asio=0.70)   ! surface albedo of ice on ocean (=0.50 Pierrehumbert) 
 
 c       CLOUD COVERAGE		 
 	parameter(fcw=0.70) ! cloud coverage on water (mean from Sanroma & Palle 2011)
@@ -267,4 +268,4 @@ c       DATA FOR THE PRODUCTION OF FIT FILES
 
         parameter(Pmass=1.0) !GM: hotfix!
 
-
+        parameter(fullout=0) !turns on (1)/ off(0) the output of EVERY temperature during the run (every time, every latitude)

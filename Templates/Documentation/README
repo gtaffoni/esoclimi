@@ -2,7 +2,7 @@
 ==================================================================
      ESTM readme
 
-     ESTM 1.1.1  - February 9th, 2017
+     ESTM 1.1.03  - February 9th, 2017
      	      	    Authors:
 		    Juan Vladilo
 		    Giuseppe Murante
@@ -12,36 +12,25 @@
 		 contacts: vladilo@oats.inaf.it
 		           murante@oats.inaf.it
 
-                 readme version 1.1.1, 2/9/2017 GM
+                 readme version 1.1.02, 9/2/2017 GM
 
 		 NEW: read sections on FITS file,
                  and the new auxiliary readme files 
                    README_results
 		   README_execution
-
-		 NEW: directory structure changed.
-		      The new parallel.py MPI driver for ESTM is in src
 	       							
 ==================================================================
 
 The code now is organized in sub-directories.
-  Templates/Std contains the basic standard ESTM FORTRAN files
-  Templates/ModulesDef contains default module files
-  Templates/VegPassive the main files for the module Vegetation-Passive
-  Templates/VegPassive/Modules contains module files for the module Vegetation-passive
-  Templates/VegAlbedoFB, Templates/VegAlbedoFB/Modules contains the same for the Vegetation-Albedo FB build
+  Std contains the basic standard ESTM files
+  ModulesDef contains default module files
+  VegPassive the main files for the module Vegetation-Passive
+  VegPassive/Modules contains module files for the module Vegetation-passive
+  VegAlbedoFB, VegAlbedoFB/Modules contains the same for the Vegetation-Albedo FB build
   Src is the directory when the code is assembled, built and run
-  Src.bak will save old Src (if present)
-    if an older Src.bak is present, it will be deleted
   Risultati (the results directories) will contain the newest results
   Risultati.bak will save old Risultati (if present)
     if an older Risultati.bak is present, it will be deleted
-
-  src contains all the python files, including those used for the parallel driver (see separate README)
-    This includes EARTH.py, K452b.py and Dune.py
-
-  Templates/Documentation contains READMEs and run_dune.bash, used to run the code standalone.
-   it also contains temp1.py and veg1.py
 
 *********  WARNING:
  runEBM.py and startpar.h have been slightly changed from the previous version!!
@@ -182,17 +171,14 @@ FIND IN THE DIRECTORY VegAlbedoFB
 ======================================================
 
 
-1) Std version: copy all the files in the directory Templates/Std into the directory Src
-   copy all the files in Templates/ModulesDef in the directory Src
-   IMPORTANT: copy Templates/Std/startpar_standalone.g to Src/startpar.h
-              copy src/runEBM_standalone.py to Src/runEBM.py
-	      copy src/libraryEBM.py , src/constantsEBM.py in Src
+1) Std version: copy all the files in the directory Std into the directory Src
+   copy all the files in ModulesDef in the directory Src
 
-2) Passive vegetation version: after 1), copy ALSO all the files in the Templates/VegPassive directory
-   and in Templates/VegPassive/Modules directory in Src
+2) Passive vegetation version: after 1), copy ALSO all the files in the VegPassive directory
+   and in VegPassive/Modules directory in Src
 
-3) Albedo FeedBack from vegetation: after 2), copy ALSO all the files in the Templates/VegAlbedoFB and 
-   Templates/VegAlbedoFB/Modules directories into Src
+3) Albedo FeedBack from vegetation: after 2), copy ALSO all the files in the VegAlbedoFB and 
+   VegAlbedoFB/Modules directories into Src
 
 At this point:
 
@@ -233,7 +219,7 @@ Finally, I included a dir named "Plots" with Juan's .py files for plotting thing
 ***************** automatic config and run ******************************
 
 Note that there is a run.bash shell script that does everything automatically.
-./run_dune.bash
+./run.bash
 asks you how to configure the code, fills Src and runs the code. It leaves the source files there
 but moves the results in the main directory.
 You can also issue
@@ -261,7 +247,6 @@ The same is true for the passive vegetation version, even if results are SLIGHTL
 because of the simultaneous integration of the two ODE that changes the values of 
 adaptive time-steps h.
 
-I tested that VegAlbedoFB is doing the same thing that we obtained in Pisa with Antonello, 1/9/2017
 
 
 ======================================================

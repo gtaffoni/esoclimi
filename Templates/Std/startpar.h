@@ -13,23 +13,16 @@
         real*8 calpha, cbeta
         real*8 xmin, xmax, dx
         integer maxNorbits, nouti, nprompti, idebug
-<<<<<<< HEAD
         real*8 deltaTconv, h1, hmin,eps
-=======
-        real*8 deltaTconv, ddeltaTconv, h1, hmin,eps
->>>>>>> EsoMPI
         real*8 Tstart, Tlim1
         real*8 COCEAN
         character*16 albedoType,iceType, zenDistType
         real*8 fixAlbedo, column, RH_E, RH
         real*8 D0par, C0par, C1par, Rpar
         real*8 Tcxl1, Tcxl2
+        integer fullout
 	
-<<<<<<< HEAD
 c       MATHEMATICAL/PHYSICAL CONSTANTS 
-=======
-c       MAT/maxNorHEMATICAL/PHYSICAL CONSTANTS 
->>>>>>> EsoMPI
 	parameter(pi2=6.28318530717958647d0)  ! 2*pi
 	parameter(sigma=5.67040d-8)	      ! [W/m2 K4] Stefan-Boltzsmann constant SI
         parameter(cgrav=6.67259d-11)          ! gravitational constant SI
@@ -86,15 +79,8 @@ c       SIMULATION PARAMETERS
 
 	
 c       TIME INTEGRATION PARAMETERS
-<<<<<<< HEAD
 	parameter(maxNorbits=100)      ! max integration time (number of orbital periods)     
 	parameter(deltaTconv=1.0d-2)   ! simulation stops when annual global temperature converges within this accuracy
-=======
-        parameter(maxNorbits=1000)      ! max integration time (number of orbital periods)
-        parameter(deltaTconv=1.0d-4)   ! simulation stops when DELTA(annual global temperature)/annual global temperature
-*                                        converges within this accuracy
-        parameter(ddeltaTconv=1.d-4)   ! also the derivative of DeltaT/T is checked
->>>>>>> EsoMPI
 	
 	parameter(h1 = 80000.0)
 	parameter(hmin=60.) 
@@ -143,4 +129,5 @@ c       ASTROBIOLOGICAL PARAMETERS
         parameter(Tcxl2=Tcxl1+50.)   ! [K] maximum temperature for complex life
 
 
+        parameter(fullout=1) !turns on (1)/ off(0) the output of EVERY temperature during the run (every time, every latitude)
 

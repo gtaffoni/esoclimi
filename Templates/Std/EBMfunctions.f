@@ -21,7 +21,7 @@
       CL =CSOLID+CATM     ! effective thermal capacity over lands
       CIL=CSOLID+CATM     ! ... and over continental ices
       
-      CO =CATM+COCEAN      ! effective thermal capacity over oceans  
+      CO =CATM+COCEAN/2.      ! effective thermal capacity over oceans  
       CIO=CSOLID+CATM     ! ... and over ocean ices 
      
 *       thermal inertia associated with the latent heat of water-ice phase change
@@ -233,8 +233,8 @@ c        print *,'EXTRAPOLATION AT END OF RANGE',x0
       if (dabs(HH).gt.0.0) then  
 c          call qgaus(alb_Z,-HH,+HH,Aterm)
 c          Aterm=Aterm/(2.*HH) ! normalization
-	  call qgaus(alb_Z,0.d0,+HH,Aterm)     ! SFRUTTATA PROPRIETA' DI SIMMETRIA
-          Aterm=Aterm/HH ! normalization  ! int(-H,+H)=2*int(0,+H)
+	  call qgaus(alb_Z,0.d0,+HH,Aterm)     ! SFRUTTATA PROPRIETA' DI SIMMETRIA          
+          Aterm=Aterm/HH        ! normalization  ! int(-H,+H)=2*int(0,+H)
       else
           Aterm=-1.
       end if   
@@ -341,6 +341,10 @@ c      end
       alb_Z=ToaQuadLinInterp(T,pressP/1.d5,Zdeg,as)
       return
       end
+
+
+
+
       
 *******************************************************************
 *       calculate cloud albedo at zenith distance Z
@@ -358,7 +362,7 @@ c       end
 *******************************************************************
 *       calculate mean zonal surface albedo
 *******************************************************************
-        include "module_albedo_surf.f"
+        include "module_albedo_surf.f" 
 
 ***********************  END OF ALBEDO ROUTINES  *************************
 
@@ -555,20 +559,22 @@ c          true anomaly, Eq. (A27)
 *     After the first 20 orbits use the option (2) in zones with T < 273 
 *     for more than 50% of the orbit; otherwise keeps using option (1)
 ***********************************************************************
-
+*     warning, modified by GM 13/3/2019
+      
        real*8 function f_ice(temp,time,ilat)
        implicit none
        include 'parEBM.h' ! read Porb,Ns
-       integer ilat,ks,js,kf
+       integer ilat,ks,js,kf,jnow, jjs
        real*8 temp,time 
        real*8 tempmat(Ns,N)
        real*8 freezefraction !,season,oldtemp
-       real*8 Tmed
+       real*8 Tmedlat(N)
 c       real*8 Tmedq
        real*8 iceWK97 
        real*8 arr(Ns) 
        
-       common /tempmatrix/ tempmat 
+       common /tempmatrix/ tempmat
+       common/mediat/ Tmedlat
 
        if(iceType.eq.'none') then
        f_ice=0.
@@ -576,43 +582,44 @@ c       real*8 Tmedq
        end if
        
        if(time/Porb.lt.10.) then  
-       f_ice=iceWK97(temp)
+          f_ice=iceWK97(temp)
        return
        end if 
 
 c      calculate the fraction of orbital period during which the latitude zone is frozen
 
-       kf=0
-       do js=1,Ns
-          if(tempmat(js,ilat).lt.273.15) kf=kf+1
-       end do
-       freezefraction=dfloat(kf)/dfloat(Ns)  
+*       kf=0
+*       do js=1, Ns
+*          if(tempmat(js,ilat).lt.273.15) kf=kf+1
+*       end do
+*       freezefraction=dfloat(kf)/dfloat(Ns)  
         
 c      calculate the ice fraction 
 
-       if(freezefraction.gt.6./12.) then 
+*       if(freezefraction.gt.6./12.) then 
         
-          Tmed=0. 
-          do js=1,Ns  
-	  Tmed=Tmed+tempmat(js,ilat) 
-          end do  
-	  Tmed=Tmed/dfloat(Ns)  
+*          Tmed=0. 
+*          do js=jnow,jnow-Ns/4, -1
+*             if (js.le.0) then
+*                jjs=js+Ns
+*             else
+*                jjs=js
+*             endif
+*             Tmed=Tmed+tempmat(jjs,ilat) 
+*          end do  
+*	  Tmed=Tmed/dfloat(Ns/4+1)  
 
-          f_ice=iceWK97(Tmed) 
+          f_ice=iceWK97(Tmedlat(ilat)) 
 
-c          Tmedq=0. !  QUADRATIC MEAN
-c          do js=1,Ns  
-c	  Tmedq=Tmedq+tempmat(js,ilat)**2 
-c          end do  
-c	  Tmedq=dsqrt( Tmedq/dfloat(Ns) ) 
 
-c          f_ice=iceWK97(Tmedq)   
+*          print *,Tmedlat(ilat), temp
 
-       else  
-        
-	  f_ice=iceWK97(temp) 
+
+*       else  
+       
+*	  f_ice=iceWK97(temp) 
 	  
-       end if 
+*       end if 
        
        return
        end 
@@ -696,3 +703,63 @@ C  (C) Copr. 1986-92 Numerical Recipes Software 1@.
 
 !***********************************************************
 
+
+***************** the following is for the computation of surface albedo, INCLUDING ices but not clouds***
+
+      
+     
+      real*8 function Aterm_surf(time,x,T,i,fo)
+
+      implicit none
+      include 'parEBM.h' 
+      
+      real*8 time,x,T
+      real*8 xl,phi,delta,cosH,HH,sind
+      real*8 nu, Ls  
+      real*8 halfday
+      real*8 alb_Zsurf
+      external alb_Zsurf
+      
+      real*8 fo(N),folat(N)
+      integer i 
+      
+      real*8 Tlat,ctime
+      integer ilat,j 
+
+      real*8 meandiurnalclalb,pi
+      
+      common /albparam/ ctime,phi,delta,folat,Tlat,ilat
+
+      if(albedoType.eq.'fix') then
+      Aterm_surf=fixAlbedo
+      return 
+      end if
+      
+      Tlat=T
+      ilat=i 
+      ctime=time
+      
+      do j=1,N
+      folat(j)=fo(j)
+      end do
+
+      phi=dasin(x) 
+ 
+      Ls=nu(time)+LSP                  !  Eq. (A26)
+      xl  = dmod(Ls+Ls0,pi2)                              
+      sind= -dsin(OBLIQUITY)*dcos(xl)  ! Eq. (A25)  
+      delta=dasin(sind) 
+ 
+      HH=halfday(phi,delta)
+      
+      if (dabs(HH).gt.0.0) then  
+c          call qgaus(alb_Z,-HH,+HH,Aterm)
+c          Aterm=Aterm/(2.*HH) ! normalization
+	  call qgaus(alb_Zsurf,0.d0,+HH,Aterm_surf)     ! SFRUTTATA PROPRIETA' DI SIMMETRIA          
+          Aterm_surf=Aterm_surf/HH        ! normalization  ! int(-H,+H)=2*int(0,+H)
+      else
+          Aterm_surf=-1.
+      end if   
+
+      return
+      end

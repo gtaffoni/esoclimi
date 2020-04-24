@@ -142,6 +142,15 @@ Structure: single line, space separated data
 24: sigmaRG (fraction of surface continuously above Runaway Greenhouse limit)
 25: sigmaBoil (fraction of surface continuously above water boiling point)
 26: exitFlag (1:convergence,-0.5:Tmax<Tlim1,-1:RG,-100:"stepsize too small"
+  **IF** VegPassive is selected:
+27: Tveg (optimal vegetation temperature)
+28: width (Vegetation temperature tolerance, sigma of the gaussian)
+29: Vegstart: initial vegetation fraction
+30: seedfall: vegetation meridional transport coeefficient
+31: gromax: maximum growth in one year
+32: dead: fractional decrease of vegetation fraction, per year
+33: dTdead: if outside the range [Tveg-dTdead, Tveg+dTdead], dead is multiplied by 100
+34: fractional tolerance in the varitiation of global annual mean vegetation fraction for convergence
 *************************************************************
 
 
