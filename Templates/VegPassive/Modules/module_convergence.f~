@@ -1,0 +1,7 @@
+         call calculate_convergence(i, nprompt, 
+     >        convergence, annualglobalT,tsum, tsum_old,
+     >     annualGlobalVeg, annualGlobalVeg_old,
+     >     annualglobalA, fcTOT, iceTOT, pressPtot, sigmaCRIT, 
+     >        sigmaLIM, Tmax, f, tts, t2, exitFLAG)
+
+
